@@ -5,8 +5,11 @@
 ## Lean foundations
 
 Reusable manifold and Lie-group foundations in Lean 4, developed by Ramiro Lafuente.
-The initial results construct local sections from submersion normal forms and prove
-smooth descent. Lie II/III and general homogeneous quotients remain planned work.
+The initial results construct local sections and prove smooth descent. For `C^n` maps
+of real or complex manifolds with complete, boundaryless source model and `n ≠ 0`,
+split-surjective differentials give submersion charts and local sections. For
+finite-dimensional target models, surjectivity of the differential suffices.
+Lie II/III and homogeneous quotient constructions remain planned work.
 See [the ten-stage roadmap](docs/FOUNDATIONS.md).
 
 The Lean library and namespace are `LieGroups`; the GitHub repository is `lean-LieGroups`.
@@ -17,6 +20,7 @@ lake update
 lake exe cache get
 lake build
 lake env lean scripts/AuditFoundations.lean
+lake env lean scripts/CheckSubmersionCriterion.lean
 ```
 
 AI-generation disclosure: the initial modules and roadmap were generated with OpenAI
