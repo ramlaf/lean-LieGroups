@@ -11,3 +11,5 @@ import LieGroups.ExponentialSmooth
 import LieGroups.Analysis.SmoothLocalInverse
 import LieGroups.Manifold.InteriorChartHomeomorph
 import LieGroups.ExponentialLocalChart
+import LieGroups.HomomorphismDifferential
+import LieGroups.HomomorphismLieAlgebra
