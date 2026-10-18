@@ -36,8 +36,9 @@ variable {K P : Type*} [NormedAddCommGroup K] [NormedSpace ℝ K]
   [FiniteDimensional ℝ P]
   {μ : Bracket (K × P)} {hjac : μ.Jacobi}
 
-local instance : CompleteSpace (K × P) := FiniteDimensional.complete ℝ (K × P)
-local instance : ENat.LEInfty (minSmoothness ℝ 3) := ⟨by simp⟩
+local instance bfrfSubgroupCompleteModel : CompleteSpace (K × P) :=
+  FiniteDimensional.complete ℝ (K × P)
+local instance bfrfSubgroupLEInfty : ENat.LEInfty (minSmoothness ℝ 3) := ⟨by simp⟩
 
 /-- BFRF's explicitly transported curve derivatives define exactly the generic ambient
 curve tangent set. -/
@@ -76,8 +77,8 @@ variable [FiniteDimensional ℝ F]
   {Q : Type*} [Group Q] [TopologicalSpace Q] [ChartedSpace D Q]
   [LieGroup 𝓘(ℝ, D) ∞ Q] [T2Space Q]
 
-local instance : CompleteSpace F := FiniteDimensional.complete ℝ F
-local instance : CompleteSpace D := FiniteDimensional.complete ℝ D
+local instance bfrfSubgroupCompleteSource : CompleteSpace F := FiniteDimensional.complete ℝ F
+local instance bfrfSubgroupCompleteOther : CompleteSpace D := FiniteDimensional.complete ℝ D
 
 /-- Two connected embedded subgroup presentations satisfying BFRF's tangent-isotropy
 condition have the same underlying subgroup. Their intrinsic model spaces may differ.
