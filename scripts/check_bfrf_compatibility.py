@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Check the optional adapter against an existing, built BFRF checkout.
+"""Check the optional adapters against an existing, built BFRF checkout.
 
 Usage: python3 scripts/check_bfrf_compatibility.py [path/to/BFRF]
 
@@ -10,8 +10,8 @@ BFRF's dependencies through
 Their sources and locked dependencies must be current; shared dependency pins
 must match this checkout's pins.
 This check does not build BFRF, change either project's dependency pins, or write
-to the BFRF checkout. It recompiles BFRF's actual integration source and the
-adapter into a temporary directory, then runs the examples and axiom audit.
+to the BFRF checkout. It recompiles BFRF's actual integration and isotropy sources
+and the adapters into a temporary directory, then runs the examples and axiom audits.
 """
 
 import argparse
@@ -128,10 +128,14 @@ def main() -> int:
     args = parser.parse_args()
     bfrf_root = args.bfrf_root.expanduser().resolve()
     integration_source = bfrf_root / "BFRF/HomogeneousLieGroupIntegration.lean"
+    isotropy_source = bfrf_root / "BFRF/HomogeneousIsotropySubgroup.lean"
     bfrf_library = bfrf_root / ".lake/build/lib/lean"
     adapter_source = ROOT / "compat/BFRF/HomomorphismLieAlgebra.lean"
     check_source = ROOT / "scripts/CheckBFRFCompatibility.lean"
+    subgroup_adapter_source = ROOT / "compat/BFRF/LieSubgroup.lean"
+    subgroup_check_source = ROOT / "scripts/CheckBFRFLieSubgroup.lean"
     require_file(integration_source, "Pass the path to an existing BFRF checkout.")
+    require_file(isotropy_source, "BFRF's isotropy subgroup source is missing.")
     for root in (ROOT, bfrf_root):
         require_file(root / "lean-toolchain", "Both checkouts need a Lean toolchain file.")
     if (ROOT / "lean-toolchain").read_text().strip() != (
@@ -146,6 +150,10 @@ def main() -> int:
     )
     require_file(
         ROOT / ".lake/build/lib/lean/LieGroups/HomomorphismLieAlgebra.olean",
+        "Run `lake build` in this LieGroups checkout first.",
+    )
+    require_file(
+        ROOT / ".lake/build/lib/lean/LieGroups/EmbeddedSubgroupTangent.olean",
         "Run `lake build` in this LieGroups checkout first.",
     )
     # These are the external DifferentialGeometry imports in BFRF's integration
@@ -173,6 +181,8 @@ def main() -> int:
         )
     require_file(adapter_source, "The optional BFRF adapter source is missing.")
     require_file(check_source, "The BFRF adapter examples and audit are missing.")
+    require_file(subgroup_adapter_source, "The optional BFRF subgroup adapter is missing.")
+    require_file(subgroup_check_source, "The BFRF subgroup examples and audit are missing.")
     env = lake_environment()
     lean = shutil.which("lean", path=env.get("PATH"))
     if lean is None:
@@ -184,8 +194,11 @@ def main() -> int:
         # Lean resolves the first matching top-level module directory, without
         # falling through to later BFRF directories for individual imports.
         # Overlay the already-built prerequisites with read-only symlink use;
-        # neither output module may be a symlink into the sibling checkout.
-        rebuilt_modules = {"HomogeneousLieGroupIntegration", "HomomorphismLieAlgebra"}
+        # No output module may be a symlink into the sibling checkout.
+        rebuilt_modules = {
+            "HomogeneousLieGroupIntegration", "HomomorphismLieAlgebra",
+            "HomogeneousIsotropySubgroup", "LieSubgroup",
+        }
         for artifact in (bfrf_library / "BFRF").iterdir():
             if artifact.name.split(".", 1)[0] not in rebuilt_modules:
                 (bfrf_overlay / artifact.name).symlink_to(artifact)
@@ -201,6 +214,14 @@ def main() -> int:
                 "BFRF adapter", adapter_source, ROOT / "compat",
                 output_root / "BFRF/HomomorphismLieAlgebra.olean",
             ),
+            (
+                "BFRF isotropy source", isotropy_source, bfrf_root,
+                output_root / "BFRF/HomogeneousIsotropySubgroup.olean",
+            ),
+            (
+                "BFRF subgroup adapter", subgroup_adapter_source, ROOT / "compat",
+                output_root / "BFRF/LieSubgroup.olean",
+            ),
         ):
             print(f"Checking {label}: {source}", flush=True)
             subprocess.run(
@@ -209,6 +230,8 @@ def main() -> int:
             )
         print("Checking BFRF adapter examples and axiom audit", flush=True)
         subprocess.run([lean, str(check_source)], cwd=ROOT, env=env, check=True)
+        print("Checking BFRF subgroup examples and axiom audit", flush=True)
+        subprocess.run([lean, str(subgroup_check_source)], cwd=ROOT, env=env, check=True)
     print("BFRF compatibility check passed.")
     return 0
 
