@@ -30,7 +30,7 @@ below are starting points; full statement comparisons are required before later 
 
 | Source | Edition and principal role | Locator status |
 | --- | --- | --- |
-| John M. Lee, *Introduction to Smooth Manifolds* | Second edition, Springer, copyright 2013; local sections, rank theorem, flows, Frobenius, quotients | Checked: Theorem 4.12 (rank theorem), p. 81; Theorem 4.26 (local sections), p. 88; Theorem 4.29 (smooth descent), p. 90; Proposition 7.14 (connected-group generation), pp. 156–157; Lemma 9.15 and Theorem 9.18 (uniform time and completeness), p. 216; Lemma 19.24 and Theorem 19.26 (Lie-subalgebra distribution and integration), pp. 506–507; Theorem 20.1 (one-parameter subgroups), p. 516; Theorem 20.12 (closed subgroups), pp. 523–525; Theorem 21.17 (homogeneous quotient construction), pp. 551–552. Later locators remain to be checked. |
+| John M. Lee, *Introduction to Smooth Manifolds* | Second edition, Springer, copyright 2013; local sections, rank theorem, flows, Frobenius, quotients | Checked: Theorem 4.12 (rank theorem), p. 81; Theorem 4.26 (local sections), p. 88; Theorem 4.29 (smooth descent), p. 90; Theorem 7.7 (smooth covering groups), pp. 154–155; Proposition 7.14 (connected-group generation), pp. 156–157; Lemma 9.15 and Theorem 9.18 (uniform time and completeness), p. 216; Lemma 19.24 and Theorem 19.26 (Lie-subalgebra distribution and integration), pp. 506–507; Theorem 20.1 (one-parameter subgroups), p. 516; Theorem 20.12 (closed subgroups), pp. 523–525; Theorem 20.19 (Lie II), pp. 530–531; Corollary 20.20 (integration of Lie-algebra equivalences), p. 531; Theorem 21.17 (homogeneous quotient construction), pp. 551–552. Later locators remain to be checked. |
 | Frank W. Warner, *Foundations of Differentiable Manifolds and Lie Groups* | Springer 1983 reprint, GTM 94; principal Lie-theory and quotient statements | Publisher identifies Chapter 3, “Lie Groups,” pp. 81–136. Exact statement locators remain to be checked. |
 | Anthony W. Knapp, *Lie Groups Beyond an Introduction* | Digital second edition, author, 2023; integration and Lie III proof dependencies | Appendix B, Theorem B.7, is the Lie III existence statement. Its proof route uses Levi decomposition, solvable integration, coverings, and semidirect products; it requires a dependency audit before implementation. |
 | Sigurdur Helgason, *Differential Geometry, Lie Groups, and Symmetric Spaces* | AMS 2001 corrected reprint of the 1978 edition; independent convention checks and homogeneous geometry | Exact theorem/section locators remain to be checked. |
@@ -70,6 +70,16 @@ These observations concern those pinned checkouts, not every current upstream br
 - The searches did not locate general Lie II/III, Lie-subalgebra integration, or a general
   closed-subgroup homogeneous quotient construction in the pinned dependencies.
   This is a bounded search result, not a claim of nonexistence elsewhere.
+- The Stage 7 inspection found an actual based-path universal cover in
+  DifferentialGeometry's `Topology/Covering/Basic.lean`, with its covering and simple
+  connectedness proofs in `CoveringMap.lean`, and its manifold atlas in `Manifold.lean`.
+  The smooth group law is constructed in this package. The pinned
+  `Topology/Covering/LocalDiffeomorph.lean` imports `CLMNeumann`, which refers to the
+  removed `ContinuousLinearMap.IsInvertible` API. The new
+  `Manifold/UniversalCoverProjection.lean` proves the projection's local diffeomorphism
+  directly from the accepted atlas and Mathlib's local-diffeomorphism interface.
+  This avoids the incompatible module without changing either dependency pin or
+  checkout, and leaves no Stage 7 blocker.
 
 ## Ten implementation stages and acceptance criteria
 
@@ -372,7 +382,7 @@ Acceptance: differentiating a supplied smooth group equivalence constructs its i
 Lie equivalence and supplies the compatibility field of `IntegratedLieEquiv`, using
 the actual downstream structures. For a separately prescribed Lie equivalence, identify
 it with the induced one; constructing a group map with that prescribed differential
-belongs to Stage 7.
+is now supplied by Stage 7 under its simply connected hypotheses.
 
 First milestone: [HomomorphismDifferential.lean](../LieGroups/HomomorphismDifferential.lean),
 implemented on 2026-10-05.
@@ -461,8 +471,9 @@ implemented on 2026-10-16.
   field for the induced Lie equivalence. `ofInducedLieEquivEq` handles a prescribed
   equivalence once it is identified with the induced one, and
   `IntegratedLieEquiv.inducedLieEquiv_eq` recovers that equality from existing
-  integration data. This is differentiation of a supplied group map; the existence
-  of a map integrating an independently prescribed Lie equivalence remains Stage 7.
+  integration data. This Stage 4 API differentiates a supplied group map.
+  Stage 7 now constructs a map integrating an independently prescribed Lie equivalence
+  between supplied simply connected finite-dimensional real Hausdorff Lie groups.
 - [CheckBFRFCompatibility.lean](../scripts/CheckBFRFCompatibility.lean) checks the
   actual records and `IntegratedTransport` interface.
   [The compatibility runner](../scripts/check_bfrf_compatibility.py) recompiles the
@@ -674,7 +685,7 @@ supplied smooth group isomorphism preserves and reflects closed subgroup images.
 `isClosed_lieSubalgebraSubgroup_map_iff` therefore transports the closedness condition
 on integrated isotropy. Closedness remains a condition on admissible initial data.
 Lie-algebra integration alone does not establish it, and construction of the integrated
-group isomorphisms remains Stage 7.
+group isomorphisms is now supplied by Stage 7.
 
 The optional [BFRF quotient adapter](../compat/BFRF/ClosedSubgroupQuotient.lean) targets the
 actual `BFRF.Homogeneous.HomogeneousQuotientRealization` interface, with its
@@ -682,7 +693,8 @@ prescribed tangent model, projection differential, fiber relation, smooth action
 smooth descent. For finite-dimensional `K` and `P`, the constructor takes the existing
 `IntegratedLieGroup` and `IntegratedIsotropySubgroup` records and explicitly requires
 `T2Space A.G`. The ambient integrating group remains supplied data; constructing that
-group and integrated isomorphisms belongs to Stages 7–8. The constructor
+group belongs to Stage 8. Stage 7 now constructs integrated isomorphisms between
+supplied simply connected integrating groups. The constructor
 `BFRF.Homogeneous.nonempty_homogeneousQuotientRealization` and its
 [interface check](../scripts/CheckBFRFQuotient.lean) are accepted against the actual
 `BFRF.HomogeneousQuotient` source, with only the standard Lean axioms. The adapter stays
@@ -697,7 +709,9 @@ proves that `ℤ ⊂ ℝ` is closed, discrete, and disconnected, then checks its
 embedded subgroup, quotient, local sections, and exact tangent kernel. Reproduce the core and
 optional downstream checks with the commands in the README.
 
-Checked on 2026-10-19: the full core `lake build` succeeds (2962 jobs), all 357 core
+Historical Stage 6 validation snapshot, subsequently committed as
+[`b67c5ba`](https://github.com/ramlaf/lean-LieGroups/commit/b67c5ba364e693b09f27568996b9adc350b64832):
+checked on 2026-10-19, the full core `lake build` succeeds (2962 jobs), all 357 core
 axiom reports use only `propext`, `Classical.choice`, and `Quot.sound`, and all seven core
 example scripts pass, including the nonnormal `GL(2, ℝ)` stabilizer and discrete `ℤ ⊂ ℝ`.
 The three discrete-example axiom reports also use only those standard axioms. The optional
@@ -723,16 +737,117 @@ Stage 6's acceptance criterion is met: ordinary closed subgroup data construct t
 subgroup and quotient manifolds, and supply the existing downstream quotient interface
 under the stated finite-dimensional real and Hausdorff hypotheses.
 
-### 7. Lie II and smooth covering groups
+### 7. Lie II and smooth covering groups — complete
 
-For finite-dimensional real Lie groups/algebras, provide a general Lie-homomorphism
-integration theorem with its simply connected source hypothesis and uniqueness. Construct
-the required smooth group structure on a universal cover rather than assuming it. Derive
-integration of Lie-algebra equivalences with the prescribed differential. Principal anchor:
-Warner; cross-check Knapp.
+For finite-dimensional real Hausdorff Lie groups with boundaryless models,
+[LieII.lean](../LieGroups/LieII.lean) constructs the smooth group homomorphism integrating
+every prescribed Lie-algebra homomorphism from a simply connected source:
 
-Acceptance: construct `IntegratedLieEquiv` from a Lie-algebra equivalence between supplied
-simply connected finite-dimensional real Lie groups.
+- `nonempty_lieHomomorphismIntegration` constructs a `LieHomomorphismIntegration φ`.
+  Its smooth group homomorphism has identity differential exactly `φ`.
+- `existsUnique_smoothHom_of_lieHom` gives existence and uniqueness directly for
+  Mathlib's bundled `ContMDiffMonoidMorphism`. The target need not be connected or
+  simply connected. Uniqueness itself requires only connectedness of the source.
+- `nonempty_lieEquivalenceIntegration` constructs a smooth group equivalence with
+  prescribed differential from a Lie-algebra equivalence when both supplied groups
+  are simply connected. Its inverse is smooth and has the inverse differential.
+  `integrateLieHom` and `integrateLieEquiv` choose the corresponding integrations.
+
+The proof integrates the graph Lie subalgebra inside the product group using Stage 5.
+Projection of that connected immersed group onto the source has bijective identity
+differential, hence is a local diffeomorphism and a surjective covering homomorphism.
+Simple connectedness of the source makes the projection invertible. Composing its smooth
+inverse with the second projection constructs the required group homomorphism.
+Equality on exponentials and connected-group generation prove uniqueness.
+
+The implementation adds thirteen independently importable core modules:
+
+- [HomomorphismUniqueness.lean](../LieGroups/HomomorphismUniqueness.lean) proves
+  `hom_eq_of_homLieDifferential_eq` and `hom_eq_of_homLieHom_eq` on connected sources.
+  [LieHomomorphismIntegration.lean](../LieGroups/LieHomomorphismIntegration.lean)
+  bundles prescribed smooth integrations and their composition.
+  [LieEquivalenceIntegration.lean](../LieGroups/LieEquivalenceIntegration.lean)
+  bundles smooth equivalences and constructs inverse integrations using uniqueness.
+- [LieHomomorphismGraph.lean](../LieGroups/LieHomomorphismGraph.lean) constructs the graph
+  Lie subalgebra in the actual product Lie algebra.
+  [GraphIntegration.lean](../LieGroups/GraphIntegration.lean) integrates it and proves
+  the projection differential relation and source differential bijectivity.
+  [GraphIntegrationLocalDiffeomorph.lean](../LieGroups/GraphIntegrationLocalDiffeomorph.lean)
+  proves that smooth homomorphisms with bijective identity differential are local
+  diffeomorphisms, including the graph projection.
+- [CoveringGroup.lean](../LieGroups/CoveringGroup.lean) proves that a surjective local
+  homeomorphism of topological groups is a covering homomorphism, with discrete kernel,
+  and proves surjectivity onto a connected target. Covering kernels are central when
+  the source is preconnected. [LieII.lean](../LieGroups/LieII.lean) assembles Lie II and
+  the integration of Lie-algebra equivalences.
+- [SmoothCoverLift.lean](../LieGroups/Manifold/SmoothCoverLift.lean) proves smoothness
+  of continuous lifts through local diffeomorphisms.
+  [UniversalCoverProjection.lean](../LieGroups/Manifold/UniversalCoverProjection.lean)
+  proves directly from the existing covering atlas that its projection is a smooth
+  local diffeomorphism and that continuous lifts of smooth maps are smooth.
+- [UniversalCoverGroup.lean](../LieGroups/UniversalCoverGroup.lean) constructs multiplication
+  and inversion as based continuous lifts on the actual universal covering space.
+  Covering uniqueness proves the group axioms, and smooth lifting proves smoothness
+  of the operations. [UniversalCoverLieGroup.lean](../LieGroups/UniversalCoverLieGroup.lean)
+  packages `nonempty_universalCoverLieGroup` from ordinary connected Hausdorff
+  finite-dimensional real Lie-group data with a boundaryless model. Its topology is
+  the original based-path covering topology; its endpoint projection is a surjective
+  smooth covering homomorphism and local diffeomorphism, and its differential is the
+  bundled Lie equivalence `differentialLieEquiv`.
+  [UniversalCoverCountability.lean](../LieGroups/UniversalCoverCountability.lean) proves
+  sigma compactness and second countability when the base is second countable.
+  Countability is not an extra hypothesis of Lie II or the universal-cover constructor.
+
+The optional [BFRF Lie II adapter](../compat/BFRF/LieII.lean) constructs the actual
+`BFRF.Homogeneous.IntegratedLieEquiv A B e` from the prescribed Lie-algebra equivalence
+between supplied simply connected integrating groups. The constructors
+`BFRF.Homogeneous.nonempty_integratedLieEquiv` and
+`BFRF.Homogeneous.integrateLieEquiv` require `T2Space A.G` and `T2Space B.G`; the
+integrating-group records already supply simple connectedness. Neither a group
+equivalence nor its differential compatibility is supplied as an input.
+The [interface check](../scripts/CheckBFRFLieII.lean) is accepted against the actual
+downstream sources, and the full compatibility runner passes all four adapters and
+four checks with no warnings or errors and only standard Lean axioms in its eighteen
+audited declarations. The runner changes no BFRF source or dependency pin.
+
+[CheckLieII.lean](../scripts/CheckLieII.lean) checks integration of the noninjective
+projection from the real plane to the line, including its prescribed differential,
+unequal source and target dimensions, and uniqueness. It also checks the nonidentity
+Lie equivalence given by multiplication by two, the constructed smooth group
+equivalence, its inverse, and the differential.
+[CheckUniversalCoverGroup.lean](../scripts/CheckUniversalCoverGroup.lean) applies the
+ordinary-data constructor to the circle and checks the constructed cover's group,
+smooth manifold, simple connectedness, Hausdorffness, surjective smooth covering
+homomorphism, and differential Lie equivalence. All four circle-example axiom reports
+use only `propext`, `Classical.choice`, and `Quot.sound`.
+
+Checked on 2026-10-19: the full core `lake build` succeeds (3134 jobs), all nine core
+example scripts pass, and all 410 declarations in the core axiom audit use only
+`propext`, `Classical.choice`, and `Quot.sound`. The optional BFRF runner recompiles
+the three actual downstream sources and all four adapters, passes all four interface
+checks, and reports only the same standard axioms for eighteen audited declarations,
+with no warnings or errors. The checked source SHA-256 is
+`c26409047901fe55919a68d1ae148ba182bc209d50d53f687f0d284176104cee`.
+This fingerprints 97 files: `LieGroups.lean`, `LieGroups/**/*.lean`, `compat/**/*.lean`,
+`scripts/**/*.lean`, `scripts/**/*.py`, `lakefile.toml`, `lake-manifest.json`, and
+`lean-toolchain`. Sort the relative POSIX paths, then hash each UTF-8 path, a NUL byte,
+its raw file bytes, and another NUL byte. Documentation is excluded to avoid a self-reference.
+
+Statement comparison checked on 2026-10-19 against Lee, second edition (2013):
+[Theorem 7.7, pp. 154–155](https://math.berkeley.edu/~jchaidez/materials/reu/lee_smooth_manifolds.pdf#page=172)
+for the smooth universal covering group,
+[Theorem 20.19, pp. 530–531](https://math.berkeley.edu/~jchaidez/materials/reu/lee_smooth_manifolds.pdf#page=548)
+for integration with simply connected source, and
+[Corollary 20.20, p. 531](https://math.berkeley.edu/~jchaidez/materials/reu/lee_smooth_manifolds.pdf#page=549)
+for integration of Lie-algebra equivalences. Warner remains the principal bibliographic
+anchor and Knapp the cross-check; no unchecked exact locator is assigned to either.
+
+Stage 7's acceptance criterion is met: a prescribed Lie-algebra equivalence between
+supplied simply connected finite-dimensional real Hausdorff Lie groups constructs the
+existing downstream `IntegratedLieEquiv` interface, with its actual prescribed
+differential. The required smooth universal covering group is constructed on the actual
+covering topology. Constructing an integrating group from an arbitrary Lie algebra
+remains Stage 8.
 
 ### 8. Lie III and simply connected integration
 

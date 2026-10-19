@@ -23,8 +23,7 @@ conjugation obey their multiplication and naturality laws. Lie-bracket preservat
 now gives bundled Lie-algebra homomorphisms, differentials of smooth group equivalences,
 and adjoint Lie-algebra automorphisms. The bracket proof reuses a pinned
 DifferentialGeometry directional-derivative identity. An optional BFRF adapter identifies
-its identity differential with this construction and supplies `IntegratedLieEquiv`
-for the Lie equivalence induced by a supplied smooth group equivalence.
+its identity differential with this construction.
 Connected finite-dimensional smooth subgroup images are now determined by their
 differential images. Immersed and embedded subgroup interfaces retain the intrinsic
 source manifold, and embedded subgroup tangents agree with ambient curve velocities.
@@ -48,7 +47,23 @@ tangent space is identified with the ambient Lie algebra modulo the subgroup's
 tangent subspace. The subgroup can be disconnected and need not be normal.
 The quotient is Hausdorff; subgroup and quotient are second countable when the
 ambient group is second countable. Closedness of an integrated subalgebra is
-preserved under supplied smooth group isomorphisms. Lie II/III remain planned work.
+preserved under smooth group isomorphisms.
+
+Lie II now constructs the unique smooth group homomorphism integrating any prescribed
+Lie-algebra homomorphism from a simply connected finite-dimensional real Lie group
+(`nonempty_lieHomomorphismIntegration`, `existsUnique_smoothHom_of_lieHom`). The source
+and target are Hausdorff and have boundaryless models; the target need not be connected.
+A Lie-algebra equivalence between two such simply connected groups constructs a smooth
+group equivalence with the prescribed differential (`nonempty_lieEquivalenceIntegration`).
+The optional BFRF Lie II adapter supplies its actual `IntegratedLieEquiv` record from
+the prescribed Lie-algebra equivalence.
+
+The actual universal cover of a connected Hausdorff finite-dimensional real Lie group
+also receives constructed smooth group operations (`nonempty_universalCoverLieGroup`).
+The endpoint projection is a surjective smooth covering homomorphism and local
+diffeomorphism, and its differential identifies the two Lie algebras. The construction
+retains the based-path covering topology and is second countable when the base is.
+Lie III, constructing an integrating group from an arbitrary Lie algebra, remains planned.
 See [the ten-stage roadmap](docs/FOUNDATIONS.md).
 
 The Lean library and namespace are `LieGroups`; the GitHub repository is `lean-LieGroups`.
@@ -66,11 +81,14 @@ lake env lean scripts/CheckHomomorphismDifferential.lean
 lake env lean scripts/CheckLieSubgroup.lean
 lake env lean scripts/CheckClosedSubgroupQuotient.lean
 lake env lean scripts/CheckDiscreteClosedSubgroup.lean
+lake env lean scripts/CheckLieII.lean
+lake env lean scripts/CheckUniversalCoverGroup.lean
 ```
 
 The optional [differentiation adapter](compat/BFRF/HomomorphismLieAlgebra.lean),
-[embedded subgroup adapter](compat/BFRF/LieSubgroup.lean), and
-[closed-subgroup quotient adapter](compat/BFRF/ClosedSubgroupQuotient.lean) are checked
+[embedded subgroup adapter](compat/BFRF/LieSubgroup.lean),
+[closed-subgroup quotient adapter](compat/BFRF/ClosedSubgroupQuotient.lean), and
+[Lie II adapter](compat/BFRF/LieII.lean) are checked
 against the actual downstream structures. The quotient adapter constructs
 `BFRF.Homogeneous.HomogeneousQuotientRealization` from supplied integrating-group
 and closed-isotropy records, with an explicit Hausdorff assumption on the ambient group.
@@ -84,7 +102,7 @@ python3 scripts/check_bfrf_compatibility.py ../BFRF
 ```
 
 The runner recompiles BFRF's actual integration, isotropy, and homogeneous quotient
-sources and the three adapters in a temporary directory, then checks examples and
+sources and the four adapters in a temporary directory, then checks examples and
 axiom dependencies. It does not change the BFRF checkout or either project's dependency
 pins. The adapters remain outside the core library to avoid a dependency cycle.
 
