@@ -1,0 +1,129 @@
+/-
+Copyright (c) 2026 Miyahara Kō. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Miyahara Kō
+
+Adapted for lean-LieGroups on 2026-10-19 from Komyyy/ado,
+commit 232f542c83972415709682c3de25d3643ee0d840.
+Changes: local import paths and compatibility with pinned Mathlib/Lean.
+-/
+module
+public import Mathlib.Algebra.Lie.Quotient
+public import Mathlib.LinearAlgebra.FreeModule.StrongRankCondition
+public import LieGroups.Algebra.Ado.ForMathlib.LieIdealOf
+public import LieGroups.Algebra.Ado.ForMathlib.ModuleRank
+
+@[expose] public section
+
+open Function Module LieIdeal
+
+universe u
+
+lemma LieEquiv.finrank_eq {R L L₂ : Type*} [CommRing R]
+    [LieRing L] [LieAlgebra R L] [LieRing L₂] [LieAlgebra R L₂] (e : L ≃ₗ⁅R⁆ L₂) :
+    finrank R L = finrank R L₂ :=
+  e.toLinearEquiv.finrank_eq
+
+namespace LieSubalgebra
+
+@[congr]
+lemma finrank_congr {R L : Type*} [CommRing R] [LieRing L] [LieAlgebra R L]
+    {p q : LieSubalgebra R L} (h : p = q) : finrank R p = finrank R q :=
+  (LieEquiv.ofEq p q (by simp [h])).toLinearEquiv.finrank_eq
+
+@[simp]
+lemma finrank_top {R L : Type*} [CommRing R] [LieRing L] [LieAlgebra R L] :
+    finrank R (⊤ : LieSubalgebra R L) = finrank R L :=
+  _root_.finrank_top R L
+
+end LieSubalgebra
+
+namespace LieSubmodule
+
+@[simp]
+lemma finrank_toSubmodule {R L M : Type*} [CommRing R] [LieRing L] [LieAlgebra R L]
+    [AddCommGroup M] [Module R M] [LieRingModule L M] (N : LieSubmodule R L M) :
+    finrank R N.toSubmodule = finrank R N :=
+  rfl
+
+@[simp]
+lemma finrank_quotient_toSubmodule {R L M : Type*} [CommRing R] [LieRing L] [LieAlgebra R L]
+    [AddCommGroup M] [Module R M] [LieRingModule L M] (N : LieSubmodule R L M) :
+    finrank R (M ⧸ N.toSubmodule) = finrank R (M ⧸ N) :=
+  rfl
+
+@[simp]
+lemma finrank_quotient {R L : Type*} {M : Type u}
+    [CommRing R] [LieRing L] [LieAlgebra R L]
+    [AddCommGroup M] [Module R M] [LieRingModule L M] [Nontrivial R]
+    [HasRankNullity.{u} R] [Module.Finite R M] (N : LieSubmodule R L M) :
+    finrank R (M ⧸ N) = finrank R M - finrank R N := by
+  simpa using N.toSubmodule.finrank_quotient (R := R)
+
+@[simp]
+lemma finrank_le {R L M : Type*} [CommRing R] [LieRing L] [LieAlgebra R L]
+    [AddCommGroup M] [Module R M] [LieRingModule L M] [Nontrivial R] [Module.Finite R M]
+    (p : LieSubmodule R L M) :
+    finrank R p ≤ finrank R M :=
+  p.toSubmodule.finrank_le
+
+lemma eq_top_iff_finrank_eq {K L V : Type*} [Field K] [LieRing L] [LieAlgebra K L]
+    [AddCommGroup V] [Module K V] [LieRingModule L V] [Module.Finite K V] {W : LieSubmodule K L V} :
+    W = ⊤ ↔ Module.finrank K W = Module.finrank K V := by
+  simpa using W.toSubmodule.eq_top_iff_finrank_eq
+
+lemma finrank_lt_iff {K L V : Type*} [Field K] [LieRing L] [LieAlgebra K L] [FiniteDimensional K L]
+    [AddCommGroup V] [Module K V] [LieRingModule L V] [Module.Finite K V] {W : LieSubmodule K L V} :
+    finrank K W < finrank K V ↔ W < ⊤ := by
+  simpa [lt_top_iff_ne_top] using W.toSubmodule.finrank_lt_iff
+
+lemma finrank_add_eq_of_isCompl {K L V : Type*} [Field K] [LieRing L] [LieAlgebra K L]
+    [AddCommGroup V] [Module K V] [FiniteDimensional K V] [LieRingModule L V]
+    {W₁ W₂ : LieSubmodule K L V} (h : IsCompl W₁ W₂) : finrank K W₁ + finrank K W₂ = finrank K V :=
+  Submodule.finrank_add_eq_of_isCompl <| isCompl_toSubmodule.mpr h
+
+end LieSubmodule
+
+namespace LieIdeal
+
+@[congr]
+lemma finrank_congr {R L : Type*} [CommRing R] [LieRing L] [LieAlgebra R L]
+    {p q : LieIdeal R L} (h : p = q) : finrank R p = finrank R q :=
+  (LieEquiv.ofEq p.toLieSubalgebra q.toLieSubalgebra (by simp [h])).toLinearEquiv.finrank_eq
+
+@[simp]
+lemma finrank_toLieSubalgebra {R L : Type*} [CommRing R] [LieRing L] [LieAlgebra R L]
+    (p : LieIdeal R L) : finrank R p.toLieSubalgebra = finrank R p :=
+  rfl
+
+@[simp]
+lemma finrank_top {R L : Type*} [CommRing R] [LieRing L] [LieAlgebra R L] :
+    finrank R (⊤ : LieIdeal R L) = finrank R L :=
+  _root_.finrank_top R L
+
+@[simp]
+lemma finrank_lieIdealOf {R L : Type*} [CommRing R] [LieRing L] [LieAlgebra R L]
+    (p q : LieIdeal R L) (h : p ≤ q) : finrank R (lieIdealOf p q) = finrank R p :=
+  (lieIdealOfEquivOfLe h).toLinearEquiv.finrank_eq
+
+lemma finrank_mono {R : Type*} {L : Type u} [CommRing R] [LieRing L] [LieAlgebra R L]
+    [Nontrivial R] {I J : LieIdeal R L} [Module.Finite R J] (hIJ : I ≤ J) :
+    finrank R I ≤ finrank R J :=
+  Submodule.finrank_mono (s := I.toSubmodule) (t := J.toSubmodule) (by simp [hIJ])
+
+end LieIdeal
+
+namespace LieHom
+
+lemma finrank_range_add_finrank_ker {K L L₂ : Type*} [Field K]
+    [LieRing L] [LieAlgebra K L] [LieRing L₂] [LieAlgebra K L₂] [FiniteDimensional K L]
+    (f : L →ₗ⁅K⁆ L₂) : Module.finrank K f.range + Module.finrank K f.ker = Module.finrank K L :=
+  f.toLinearMap.finrank_range_add_finrank_ker
+
+lemma finrank_idealRange_add_finrank_ker {K L L₂ : Type*} [Field K]
+    [LieRing L] [LieAlgebra K L] [LieRing L₂] [LieAlgebra K L₂] [FiniteDimensional K L]
+    (f : L →ₗ⁅K⁆ L₂) (hf : IsIdealMorphism f) :
+    Module.finrank K f.idealRange + Module.finrank K f.ker = Module.finrank K L := by
+  convert f.finrank_range_add_finrank_ker using 2; simp [← hf.eq]
+
+end LieHom

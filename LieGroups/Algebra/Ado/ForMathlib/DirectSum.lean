@@ -1,0 +1,33 @@
+/-
+Copyright (c) 2026 Miyahara Kō. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Miyahara Kō
+
+Adapted for lean-LieGroups on 2026-10-19 from Komyyy/ado,
+commit 232f542c83972415709682c3de25d3643ee0d840.
+Changes: local import paths and compatibility with pinned Mathlib/Lean.
+-/
+module
+public import Mathlib.Algebra.DirectSum.Module
+
+public section
+
+namespace DirectSum
+
+@[to_fun (attr := simp) lmap_fun_add]
+lemma lmap_add
+    {R : Type*} [Semiring R]
+    {ι : Type*} {M : ι → Type*} [(i : ι) → AddCommMonoid (M i)] [(i : ι) → Module R (M i)]
+    {N : ι → Type*} [(i : ι) → AddCommMonoid (N i)] [(i : ι) → Module R (N i)]
+    (f g : (i : ι) → M i →ₗ[R] N i) : lmap (f + g) = lmap f + lmap g := by
+  ext; simp
+
+@[to_fun (attr := simp) lmap_fun_smul]
+lemma lmap_smul
+    {R : Type*} [CommSemiring R]
+    {ι : Type*} {M : ι → Type*} [(i : ι) → AddCommMonoid (M i)] [(i : ι) → Module R (M i)]
+    {N : ι → Type*} [(i : ι) → AddCommMonoid (N i)] [(i : ι) → Module R (N i)]
+    (c : R) (f : (i : ι) → M i →ₗ[R] N i) : lmap (c • f) = c • lmap f := by
+  ext; simp [smul_apply]
+
+end DirectSum

@@ -1,0 +1,128 @@
+/-
+Copyright (c) 2026 Miyahara Kō. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Miyahara Kō
+
+Adapted for lean-LieGroups on 2026-10-19 from Komyyy/ado,
+commit 232f542c83972415709682c3de25d3643ee0d840.
+Changes: local import paths and compatibility with pinned Mathlib/Lean.
+-/
+module
+public import Mathlib.Algebra.Lie.UniversalEnveloping
+import all Mathlib.Algebra.Lie.UniversalEnveloping
+public import LieGroups.Algebra.Ado.ForMathlib.LieAssociative
+
+public section
+
+open Function LieRing LieModule
+open TensorAlgebra hiding ι
+
+attribute [local instance 100] LieRing.ofAssociativeRing
+
+variable {R L L₂ A : Type*} [CommRing R] [LieRing L] [LieAlgebra R L]
+  [LieRing L₂] [LieAlgebra R L₂] [Ring A] [Algebra R A]
+
+namespace UniversalEnvelopingAlgebra
+
+instance : LieRingModule L (UniversalEnvelopingAlgebra R L) where
+  bracket x a := ι R x * a
+  add_lie x y a := by simp [add_mul]
+  lie_add x a b := by simp [mul_add]
+  leibniz_lie x y a := by
+    simp only [ι_apply, LieHom.map_lie, of_associative_ring_bracket]; noncomm_ring
+
+@[simp]
+lemma bracket_eq (x : L) (a : UniversalEnvelopingAlgebra R L) : ⁅x, a⁆ = ι R x * a :=
+  rfl
+
+instance : LieModule R L (UniversalEnvelopingAlgebra R L) where
+  smul_lie t x a := by simp
+  lie_smul t x a := by simp
+
+@[simp]
+lemma toEnd_eq (x : L) :
+    toEnd R L (UniversalEnvelopingAlgebra R L) x = LinearMap.mulLeft R (ι R x) := by
+  ext; simp
+
+lemma ringCon_lie_compat (x y : L) :
+    ringCon R L
+      (TensorAlgebra.ι R ⁅x, y⁆ + TensorAlgebra.ι R y * TensorAlgebra.ι R x)
+      (TensorAlgebra.ι R x * TensorAlgebra.ι R y) :=
+  RingConGen.Rel.of _ _ (UniversalEnvelopingAlgebra.Rel.lie_compat x y)
+
+@[elab_as_elim, induction_eliminator]
+lemma ringCon_induction {motive : ∀ x y, ringCon R L x y → Prop}
+    (refl : ∀ a, motive a a ((ringCon R L).refl a))
+    (symm : ∀ a b (h : ringCon R L a b), motive a b h → motive b a ((ringCon R L).symm h))
+    (trans : ∀ a b c (h₁ : ringCon R L a b) (h₂ : ringCon R L b c),
+      motive a b h₁ → motive b c h₂ → motive a c ((ringCon R L).trans h₁ h₂))
+    (add : ∀ a b c d (h₁ : ringCon R L a b) (h₂ : ringCon R L c d),
+      motive a b h₁ → motive c d h₂ → motive (a + c) (b + d) ((ringCon R L).add h₁ h₂))
+    (mul : ∀ a b c d (h₁ : ringCon R L a b) (h₂ : ringCon R L c d),
+      motive a b h₁ → motive c d h₂ → motive (a * c) (b * d) ((ringCon R L).mul h₁ h₂))
+    (lie_compat : ∀ a b,
+      motive
+        (TensorAlgebra.ι R ⁅a, b⁆ + TensorAlgebra.ι R b * TensorAlgebra.ι R a)
+        (TensorAlgebra.ι R a * TensorAlgebra.ι R b)
+        (ringCon_lie_compat a b)) :
+    ∀ {a b} (h : ringCon R L a b), motive a b h :=
+  fun {_a _b} h ↦ RingConGen.Rel.rec (fun _a _b h ↦ h.rec lie_compat) refl @symm @trans @add @mul h
+
+@[expose]
+def tensorLift {α : Type*} (f : TensorAlgebra R L → α) (hf : ∀ a b, ringCon R L a b → f a = f b) :
+    UniversalEnvelopingAlgebra R L → α :=
+  Quotient.lift f hf
+
+@[simp]
+lemma tensorLift_mkAlgHom {α : Type*} (f : TensorAlgebra R L → α)
+    (hf : ∀ a b, ringCon R L a b → f a = f b) (a : TensorAlgebra R L) :
+    tensorLift f hf (mkAlgHom R L a) = f a :=
+  rfl
+
+lemma mkAlgHom_eq_mkAlgHom {a b} : mkAlgHom R L a = mkAlgHom R L b ↔ ringCon R L a b :=
+  (ringCon R L).eq
+
+variable (R L) in
+lemma mkAlgHom_surjective : Surjective (mkAlgHom R L) :=
+  (ringCon R L).mk'_surjective
+
+@[elab_as_elim, induction_eliminator, cases_eliminator]
+protected lemma ind {motive : UniversalEnvelopingAlgebra R L → Prop} :
+    (mkAlgHom : ∀ a, motive (mkAlgHom R L a)) → ∀ a, motive a :=
+  fun h ↦ (mkAlgHom_surjective R L).forall.mpr h
+
+lemma mkAlgHom_tprod_lie_of_associative {n} (f : Fin n → L) (x : L) :
+    ⁅mkAlgHom R L (tprod R L n f), ι R x⁆ =
+      ∑ i : Fin n, mkAlgHom R L (tprod R L n (update f i ⁅f i, x⁆)) := by
+  simp_rw [tprod_apply, ← List.prod_hom, List.map_ofFn, comp_def, ← ι_apply,
+    LieRing.list_prod_ofFn_lie_of_associative, ← LieHom.map_lie,
+    apply_update (f := fun _ ↦ ι R) (g := f)]
+
+variable (R) in
+@[expose]
+def map (f : L →ₗ⁅R⁆ L₂) : UniversalEnvelopingAlgebra R L →ₐ[R] UniversalEnvelopingAlgebra R L₂ :=
+  lift R (LieHom.comp (ι R) f)
+
+@[simp]
+lemma map_ι (f : L →ₗ⁅R⁆ L₂) (x) : map R f (ι R x) = ι R (f x) := by
+  simp [map]
+
+@[simp]
+lemma map_mkAlgHom (f : L →ₗ⁅R⁆ L₂) (x) :
+    map R f (mkAlgHom R L (TensorAlgebra.ι R x)) = mkAlgHom R L₂ (TensorAlgebra.ι R (f x)) := by
+  simp [map]
+
+lemma comp_map_ι (f : L →ₗ⁅R⁆ L₂) : LieHom.comp (map R f) (ι R) = LieHom.comp (ι R) f := by
+  ext; simp
+
+@[simp]
+lemma lift_comp_map (f : L₂ →ₗ⁅R⁆ A) (g : L →ₗ⁅R⁆ L₂) :
+    AlgHom.comp (lift R f) (map R g) = lift R (LieHom.comp f g) := by
+  simp [← lift_unique, funext_iff]
+
+@[simp]
+lemma lift_map (f : L₂ →ₗ⁅R⁆ A) (g : L →ₗ⁅R⁆ L₂) (x) :
+    lift R f (map R g x) = lift R (LieHom.comp f g) x :=
+  DFunLike.congr_fun (lift_comp_map f g) x
+
+end UniversalEnvelopingAlgebra

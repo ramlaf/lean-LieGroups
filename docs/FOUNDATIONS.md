@@ -32,7 +32,7 @@ below are starting points; full statement comparisons are required before later 
 | --- | --- | --- |
 | John M. Lee, *Introduction to Smooth Manifolds* | Second edition, Springer, copyright 2013; local sections, rank theorem, flows, Frobenius, quotients | Checked: Theorem 4.12 (rank theorem), p. 81; Theorem 4.26 (local sections), p. 88; Theorem 4.29 (smooth descent), p. 90; Theorem 7.7 (smooth covering groups), pp. 154–155; Proposition 7.14 (connected-group generation), pp. 156–157; Lemma 9.15 and Theorem 9.18 (uniform time and completeness), p. 216; Lemma 19.24 and Theorem 19.26 (Lie-subalgebra distribution and integration), pp. 506–507; Theorem 20.1 (one-parameter subgroups), p. 516; Theorem 20.12 (closed subgroups), pp. 523–525; Theorem 20.19 (Lie II), pp. 530–531; Corollary 20.20 (integration of Lie-algebra equivalences), p. 531; Theorem 21.17 (homogeneous quotient construction), pp. 551–552. Later locators remain to be checked. |
 | Frank W. Warner, *Foundations of Differentiable Manifolds and Lie Groups* | Springer 1983 reprint, GTM 94; principal Lie-theory and quotient statements | Publisher identifies Chapter 3, “Lie Groups,” pp. 81–136. Exact statement locators remain to be checked. |
-| Anthony W. Knapp, *Lie Groups Beyond an Introduction* | Digital second edition, author, 2023; integration and Lie III proof dependencies | Appendix B, Theorem B.7, is the Lie III existence statement. Its proof route uses Levi decomposition, solvable integration, coverings, and semidirect products; it requires a dependency audit before implementation. |
+| Anthony W. Knapp, *Lie Groups Beyond an Introduction* | Digital second edition, author, 2023; integration and Lie III proof dependencies | Checked: Theorem B.7, p. 662 (Lie III); Theorem B.2, pp. 660–662 (Levi decomposition); Proposition 1.125 and Corollary 1.126, pp. 104–105 (automorphism actions and solvable integration); Theorem B.8, p. 663 (Ado). Stage 8 below records the audit and completed representation route. |
 | Sigurdur Helgason, *Differential Geometry, Lie Groups, and Symmetric Spaces* | AMS 2001 corrected reprint of the 1978 edition; independent convention checks and homogeneous geometry | Exact theorem/section locators remain to be checked. |
 | Shoshichi Kobayashi and Katsumi Nomizu, *Foundations of Differential Geometry*, Volume I | Wiley Classics 1996 reprint; bundles, connections, and compatibility | Exact theorem/section locators remain to be checked. |
 | Kobayashi and Nomizu, Volume II | Wiley Classics 1996 reprint; invariant geometry on homogeneous spaces | Exact theorem/section locators remain to be checked. |
@@ -821,7 +821,9 @@ smooth manifold, simple connectedness, Hausdorffness, surjective smooth covering
 homomorphism, and differential Lie equivalence. All four circle-example axiom reports
 use only `propext`, `Classical.choice`, and `Quot.sound`.
 
-Checked on 2026-10-19: the full core `lake build` succeeds (3134 jobs), all nine core
+Historical Stage 7 validation snapshot, committed as
+[`304c6bb`](https://github.com/ramlaf/lean-LieGroups/commit/304c6bbf746a2d312012869aea0bd28874854c53):
+checked on 2026-10-19, the full core `lake build` succeeds (3134 jobs), all nine core
 example scripts pass, and all 410 declarations in the core axiom audit use only
 `propext`, `Classical.choice`, and `Quot.sound`. The optional BFRF runner recompiles
 the three actual downstream sources and all four adapters, passes all four interface
@@ -846,22 +848,134 @@ Stage 7's acceptance criterion is met: a prescribed Lie-algebra equivalence betw
 supplied simply connected finite-dimensional real Hausdorff Lie groups constructs the
 existing downstream `IntegratedLieEquiv` interface, with its actual prescribed
 differential. The required smooth universal covering group is constructed on the actual
-covering topology. Constructing an integrating group from an arbitrary Lie algebra
-remains Stage 8.
+covering topology. Stage 8 below constructs an integrating group from an arbitrary
+finite-dimensional real Lie algebra.
 
-### 8. Lie III and simply connected integration
+### 8. Lie III and simply connected integration — implemented and checked
 
-Construct a simply connected Lie group integrating every finite-dimensional real Lie
-algebra. Principal anchor: Knapp, Appendix B, Theorem B.7. Audit its Levi/solvable/semidirect
-product route against possible local-group/BCH or representation routes, including all
-algebraic prerequisites, before selecting the formal proof route.
+Every finite-dimensional real Lie algebra now has a constructed Hausdorff simply
+connected integrating Lie group with its Lie-algebra identification. The theorem
+`LieGroups.nonempty_lieAlgebraIntegration` takes only the algebraic structures and
+finite dimensionality. The chosen constructor is `LieGroups.lieAlgebraIntegration`.
+The [BFRF adapter](../compat/BFRF/LieIII.lean) constructs the actual
+`IntegratedLieGroup` record from a bracket and its Jacobi proof, without a supplied
+representation or integrating group. This meets Stage 8's acceptance criterion.
 
-Do not treat this as a small adapter change or promise a schedule before that audit.
-Quotient theory on already given groups can progress before this milestone is complete.
+The proof follows the representation route: Ado gives a faithful finite-dimensional
+representation, Stage 5 integrates its image in the general linear group, and Stage 7
+constructs its smooth universal cover. Recharting gives the original algebra as the
+model and identifies its bracket with the group's actual invariant-field bracket.
+Principal statement anchors are [Knapp, Theorem B.7, p. 662 (Lie III) and Theorem B.8,
+p. 663 (Ado)](https://www.math.stonybrook.edu/~aknapp/download/Beyond2-clickable.pdf#page=680).
 
-Acceptance: construct `IntegratedLieGroup` with its Lie-algebra identification, with no
-externally supplied integrating group or placeholder. This does not imply that an arbitrary
-integrated isotropy subalgebra is closed.
+The initial route audit on 2026-10-19 found no PBW, Ado, Levi decomposition, Weyl
+reducibility, or Whitehead lemma in the pinned dependencies. A local BCH route would
+also need abstract BCH and globalization. The completed implementation supplies the
+representation route's missing algebra, while retaining both dependency pins:
+Mathlib `85e3a25e006c35636f0e53b0e9296caca2685bc0` and DifferentialGeometry
+`e5037f9aab11133255430d9d7bc4137ef29df238`.
+
+**PBW.** [PBW.lean](../LieGroups/Algebra/PBW.lean) proves that weakly ordered monomials
+form a basis of the actual universal enveloping algebra, for a Lie algebra with a
+well-ordered free basis over any commutative ring. The public declarations are
+`linearIndependent_orderedEnvelopingWord`, `pbwBasis`, `pbwBasis_apply`, and
+`universalEnveloping_ι_injective`. The finite-dimensional field corollary is
+`universalEnveloping_ι_injective_finiteDimensional`; it has no characteristic-zero or
+faithful-representation premise.
+
+The proof constructs a shortlex-recursive word normal form in
+[PBWNormalForm.lean](../LieGroups/Algebra/PBWNormalForm.lean). Disjoint reductions commute;
+the triple overlap cancels by Jacobi in
+[PBWCriticalPairs.lean](../LieGroups/Algebra/PBWCriticalPairs.lean) and
+[PBWConfluence.lean](../LieGroups/Algebra/PBWConfluence.lean).
+[PBWTensor.lean](../LieGroups/Algebra/PBWTensor.lean) extends the normal form linearly to
+the tensor algebra. [PBWDescent.lean](../LieGroups/Algebra/PBWDescent.lean) proves that
+it respects every defining relation in every multiplicative context, then descends
+through the actual quotient using
+[LinearContextCongruence.lean](../LieGroups/Algebra/LinearContextCongruence.lean).
+Its values on ordered words prove independence. The earlier word-spanning and
+finite-degree filtration results remain available. Compare
+[Knapp, Theorem 3.8, pp. 217–221](https://www.math.stonybrook.edu/~aknapp/download/Beyond2-clickable.pdf#page=235)
+and [Etingof, Lemma 13.11, pp. 75–77](https://ocw.mit.edu/courses/18-745-lie-groups-and-lie-algebras-i-fall-2020/mit18_745_f20_lec_full.pdf#page=74).
+
+**Ado.** The complete characteristic-zero proof is adapted from Miyahara Kō's
+[Komyyy/ado](https://github.com/Komyyy/ado/tree/232f542c83972415709682c3de25d3643ee0d840),
+following [Tao's proof](https://terrytao.wordpress.com/2011/05/10/ados-theorem/).
+Its 61 source modules are in [Algebra/Ado](../LieGroups/Algebra/Ado/README.md), with
+upstream copyright, authorship, Apache 2.0 license, exact revision, and modification
+notices retained. The adaptation ports imports and API differences to this repository's
+pinned Lean and Mathlib. The proof includes Casimir operators, both Whitehead lemmas,
+Weyl complete reducibility, Levi decomposition, and nilpotent and solvable induction.
+These are proved prerequisites, rather than hypotheses supplied to Ado.
+
+The project-facing [Ado.lean](../LieGroups/Algebra/Ado.lean) exposes `AdoModule`,
+`adoRepresentation`, `adoRepresentation_injective`, and
+`exists_faithful_finiteDimensional_representation`. The last theorem supplies an
+injective Lie map into `Module.End K (Fin n → K)` for some finite `n`, for every
+finite-dimensional Lie algebra over a field of characteristic zero. No representation,
+Casimir invertibility, decomposition, or `IsAdo` assumption is required from the caller.
+
+The independently proved enveloping derivation, semidirect quotient, augmentation,
+weighted PBW, and adapted-flag APIs remain exported in
+[AdoDerivation.lean](../LieGroups/Algebra/AdoDerivation.lean),
+[AdoQuotient.lean](../LieGroups/Algebra/AdoQuotient.lean),
+[AdoWeights.lean](../LieGroups/Algebra/AdoWeights.lean), and
+[FilteredBasis.lean](../LieGroups/Algebra/FilteredBasis.lean).
+[NilpotentIdeals.lean](../LieGroups/Algebra/NilpotentIdeals.lean) constructs the classical
+nilradical and proves its nilpotence and automorphism invariance.
+[LieDerivationExponential.lean](../LieGroups/Analysis/LieDerivationExponential.lean)
+constructs real derivation exponentials as Lie equivalences and proves derivation
+invariance of that nilradical. This classical nilradical differs from Mathlib's
+`maxNilpotentIdeal`, which uses nilpotence of the ambient algebra's action.
+Additional trivial-coefficient Whitehead and central-extension splitting results are
+exported in [WhiteheadTrivial.lean](../LieGroups/Algebra/WhiteheadTrivial.lean) and
+[WhiteheadExtension.lean](../LieGroups/Algebra/WhiteheadExtension.lean).
+
+**Integration.** [LinearLieAlgebra.lean](../LieGroups/LinearLieAlgebra.lean) identifies
+the actual general linear group's invariant-field Lie algebra with its endomorphism
+commutator algebra. [LieAlgebraIntegration.lean](../LieGroups/LieAlgebraIntegration.lean)
+constructs an integration from an injective Lie map, using subgroup integration and a
+smooth universal cover. [RepresentationIntegration.lean](../LieGroups/RepresentationIntegration.lean)
+handles purely algebraic representation modules by choosing compatible norms internally.
+[LieIII.lean](../LieGroups/LieIII.lean) combines this geometry with Ado, giving the
+unrestricted existence theorem and chosen integration. The optional BFRF constructor
+`integratedLieGroup` reuses that group and transports its atlas to the prescribed model
+`E`; `integratedLieGroupT2Space` retains its Hausdorffness.
+
+Explicit representation constructors also remain available for center-free, abelian,
+two-step nilpotent, suitable derivation, and disjoint-center/derived cases. Separating
+families reduce to finitely many representations. Their examples and the algebraic
+solvable-splitting theorem remain useful independently of the general construction.
+
+[CheckPBW.lean](../scripts/CheckPBW.lean) checks the basis and injectivity on a
+noncommutative endomorphism algebra, including a nonzero commutator in the actual
+enveloping quotient. [CheckAdoLieIII.lean](../scripts/CheckAdoLieIII.lean) exercises the
+general characteristic-zero representation theorem and constructs an integration from
+an algebra alone. The [BFRF check](../scripts/CheckBFRFLieIII.lean) checks the unrestricted
+constructor for an arbitrary finite-dimensional Jacobi bracket, its group and manifold
+structures, simple connectedness, Hausdorffness, and Lie-algebra identification.
+
+Validation on 2026-10-19: the full `lake build` succeeds (3709 jobs), and all
+fifteen core check scripts pass without warnings or errors. All 61 adapted Ado
+modules were also explicitly built together (2708 jobs), with no warnings or errors.
+The core audit's 532 reports and the examples' 33 reports use only `propext`,
+`Classical.choice`, and `Quot.sound`. The optional BFRF runner recompiles the three
+actual downstream sources and all five adapters, passes all five interface checks,
+and reports only those standard axioms for 35 declarations, without warnings or
+errors. The full build replays existing DifferentialGeometry deprecation warnings;
+there are no new-file warnings. No proof placeholders remain.
+
+The checked source SHA-256 is
+`1a539ac768262227c1dd6194e29232d8b7ea0867fb0d6d987352c0d460080e98`,
+covering 203 files: `LieGroups.lean`, `LieGroups/**/*.lean`, `compat/**/*.lean`,
+`scripts/**/*.lean`, `scripts/**/*.py`, `lakefile.toml`, `lake-manifest.json`, and
+`lean-toolchain`. Paths are sorted lexicographically; each UTF-8 relative path,
+NUL, raw file contents, and NUL are hashed in sequence. Documentation is excluded.
+
+Stage 8 does not assert that every integrated isotropy subalgebra is closed. The
+homogeneous quotient still needs the closedness/admissibility condition. Invariant
+metric and infinitesimal-action constructions remain Stage 9, and the BF–RF assembly
+and review remain Stage 10. No dependency checkout or pin has been changed.
 
 ### 9. Invariant metrics and infinitesimal actions
 

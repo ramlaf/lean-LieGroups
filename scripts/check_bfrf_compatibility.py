@@ -139,6 +139,8 @@ def main() -> int:
     quotient_check_source = ROOT / "scripts/CheckBFRFQuotient.lean"
     lieii_adapter_source = ROOT / "compat/BFRF/LieII.lean"
     lieii_check_source = ROOT / "scripts/CheckBFRFLieII.lean"
+    lieiii_adapter_source = ROOT / "compat/BFRF/LieIII.lean"
+    lieiii_check_source = ROOT / "scripts/CheckBFRFLieIII.lean"
     require_file(integration_source, "Pass the path to an existing BFRF checkout.")
     require_file(isotropy_source, "BFRF's isotropy subgroup source is missing.")
     require_file(quotient_source, "BFRF's homogeneous quotient source is missing.")
@@ -174,6 +176,10 @@ def main() -> int:
         ROOT / ".lake/build/lib/lean/LieGroups/LieII.olean",
         "Run `lake build` in this LieGroups checkout first.",
     )
+    require_file(
+        ROOT / ".lake/build/lib/lean/LieGroups/RepresentationIntegration.olean",
+        "Run `lake build` in this LieGroups checkout first.",
+    )
     # These are the external DifferentialGeometry imports in BFRF's integration
     # source closure. Its two maximal roots build all five without adding a
     # downstream dependency or using BFRF's separately pinned LieGroups package.
@@ -205,6 +211,8 @@ def main() -> int:
     require_file(quotient_check_source, "The BFRF quotient examples and audit are missing.")
     require_file(lieii_adapter_source, "The optional BFRF Lie II adapter is missing.")
     require_file(lieii_check_source, "The BFRF Lie II examples and audit are missing.")
+    require_file(lieiii_adapter_source, "The optional BFRF Lie III adapter is missing.")
+    require_file(lieiii_check_source, "The BFRF Lie III examples and audit are missing.")
     env = lake_environment()
     lean = shutil.which("lean", path=env.get("PATH"))
     if lean is None:
@@ -221,7 +229,7 @@ def main() -> int:
             "HomogeneousLieGroupIntegration", "HomomorphismLieAlgebra",
             "HomogeneousIsotropySubgroup", "LieSubgroup",
             "HomogeneousQuotient", "ClosedSubgroupQuotient",
-            "LieII",
+            "LieII", "LieIII",
         }
         for artifact in (bfrf_library / "BFRF").iterdir():
             if artifact.name.split(".", 1)[0] not in rebuilt_modules:
@@ -241,6 +249,10 @@ def main() -> int:
             (
                 "BFRF Lie II adapter", lieii_adapter_source, ROOT / "compat",
                 output_root / "BFRF/LieII.olean",
+            ),
+            (
+                "BFRF Lie III adapter", lieiii_adapter_source, ROOT / "compat",
+                output_root / "BFRF/LieIII.olean",
             ),
             (
                 "BFRF isotropy source", isotropy_source, bfrf_root,
@@ -272,6 +284,8 @@ def main() -> int:
         subprocess.run([lean, str(quotient_check_source)], cwd=ROOT, env=env, check=True)
         print("Checking BFRF Lie II construction and axiom audit", flush=True)
         subprocess.run([lean, str(lieii_check_source)], cwd=ROOT, env=env, check=True)
+        print("Checking BFRF Lie III constructions and axiom audit", flush=True)
+        subprocess.run([lean, str(lieiii_check_source)], cwd=ROOT, env=env, check=True)
     print("BFRF compatibility check passed.")
     return 0
 

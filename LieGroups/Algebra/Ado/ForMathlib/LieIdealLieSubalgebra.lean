@@ -1,0 +1,102 @@
+/-
+Copyright (c) 2026 Miyahara Kō. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Miyahara Kō
+
+Adapted for lean-LieGroups on 2026-10-19 from Komyyy/ado,
+commit 232f542c83972415709682c3de25d3643ee0d840.
+Changes: local import paths and compatibility with pinned Mathlib/Lean.
+-/
+module
+public import Mathlib.Algebra.Lie.Ideal
+public import Mathlib.Algebra.Lie.OfAssociative
+
+public import Mathlib.Tactic.Have
+
+public section
+
+variable {R L L₂ M : Type*}
+variable [CommRing R] [LieRing L] [LieAlgebra R L] [LieRing L₂] [LieAlgebra R L₂]
+variable [AddCommGroup M] [Module R M] [LieRingModule L M] [LieModule R L M]
+
+open LieIdeal LieSubalgebra LieModule LieAlgebra
+
+namespace LieSubalgebra
+
+@[simp]
+lemma toSubmodule_sup_lieIdeal (L' : LieSubalgebra R L) (I : LieIdeal R L) :
+    (L' ⊔ I.toLieSubalgebra).toSubmodule = L'.toSubmodule ⊔ I.toSubmodule := by
+  apply le_antisymm
+  on_goal 2 => simp [← LieIdeal.toLieSubalgebra_toSubmodule]
+  suffices h :
+      ∀ᵉ (x ∈ L'.toSubmodule ⊔ I.toSubmodule) (y ∈ L'.toSubmodule ⊔ I.toSubmodule),
+        ⁅x, y⁆ ∈ L'.toSubmodule ⊔ I.toSubmodule
+  · conv_rhs => change
+      { toSubmodule := L'.toSubmodule ⊔ I.toSubmodule
+        lie_mem' {x y} hx hy := h x hx y hy : LieSubalgebra R L }.toSubmodule
+    simp_rw -proj [LieSubalgebra.toSubmodule_le_toSubmodule, sup_le_iff,
+      ← toSubmodule_le_toSubmodule]
+    simp
+  simp_rw [Submodule.forall_mem_sup, mem_toSubmodule, LieSubmodule.mem_toSubmodule]
+  intro x hx y hy z hz w hw
+  simp_rw [add_lie, lie_add, ← lie_skew y z]
+  refine add_mem (add_mem ?_ ?_) (add_mem (neg_mem ?_) ?_)
+  on_goal 1 => refine mem_of_le_of_mem le_sup_left (L'.lie_mem ?_ ?_) <;> assumption
+  all_goals refine mem_of_le_of_mem le_sup_right (I.lie_mem ?_); assumption
+
+end LieSubalgebra
+
+namespace LieIdeal
+
+@[simp]
+lemma toLieSubalgebra_le_toLieSubalgebra (I I' : LieIdeal R L) :
+    I.toLieSubalgebra ≤ I'.toLieSubalgebra ↔ I ≤ I' := by
+  simp [← toSubmodule_le_toSubmodule]
+
+@[simp]
+lemma toLieSubalgebra_sup (I I' : LieIdeal R L) :
+    (I ⊔ I').toLieSubalgebra = I.toLieSubalgebra ⊔ I'.toLieSubalgebra := by
+  suffices (I ⊔ I').toLieSubalgebra ≤ I.toLieSubalgebra ⊔ I'.toLieSubalgebra by
+    simpa [le_antisymm_iff]
+  simp [← toSubmodule_le_toSubmodule]
+
+@[simp]
+lemma toLieSubalgebra_comap (f : L →ₗ⁅R⁆ L₂) (I : LieIdeal R L₂) :
+    (I.comap f).toLieSubalgebra = I.toLieSubalgebra.comap f := by
+  ext; simp
+
+theorem toEnd_eq (I : LieIdeal R L) {x : I} :
+    toEnd R I M x = toEnd R L M x :=
+  rfl
+
+@[simp]
+theorem toEnd_mk (I : LieIdeal R L) {x : L} (hx : x ∈ I) :
+    toEnd R I M ⟨x, hx⟩ = toEnd R L M x :=
+  rfl
+
+lemma image_eq_map_iff_exists_lieIdeal_toLieSubalgebra_eq_map (f : L →ₗ⁅R⁆ L₂) (I : LieIdeal R L) :
+    f '' I = map f I ↔
+      ∃ J : LieIdeal R L₂, J.toLieSubalgebra = LieSubalgebra.map f I.toLieSubalgebra where
+  mp := by
+    intro h
+    existsi map f I
+    ext
+    simp [← h, ← SetLike.mem_coe (p := map f I)]
+  mpr := by
+    rintro ⟨J, hJ⟩
+    apply subset_antisymm
+    next => simp +contextual [Set.subset_def, mem_map]
+    have hle : I ≤ comap f J := by
+      intro x hx
+      have hx' : f x ∈ LieSubalgebra.map f I.toLieSubalgebra := by
+        exact ⟨x, hx, rfl⟩
+      rw [← hJ] at hx'
+      exact hx'
+    have hmap : map f I ≤ J := map_le_iff_le_comap.mpr hle
+    intro x hx
+    have hx' : x ∈ LieSubalgebra.map f I.toLieSubalgebra := by
+      rw [← hJ]
+      exact hmap hx
+    exact hx'
+
+end LieIdeal
