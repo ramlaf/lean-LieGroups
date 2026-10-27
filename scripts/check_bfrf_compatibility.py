@@ -10,8 +10,9 @@ BFRF's dependencies through
 Their sources and locked dependencies must be current; shared dependency pins
 must match this checkout's pins.
 This check does not build BFRF, change either project's dependency pins, or write
-to the BFRF checkout. It recompiles BFRF's actual integration, isotropy, and quotient
-sources and the adapters into a temporary directory, then runs the examples and axiom audits.
+to the BFRF checkout. It recompiles BFRF's actual integration, isotropy, quotient,
+invariant-metric, and geometric Ricci sources and the adapters into a temporary
+directory, then runs the examples and axiom audits.
 """
 
 import argparse
@@ -130,6 +131,8 @@ def main() -> int:
     integration_source = bfrf_root / "BFRF/HomogeneousLieGroupIntegration.lean"
     isotropy_source = bfrf_root / "BFRF/HomogeneousIsotropySubgroup.lean"
     quotient_source = bfrf_root / "BFRF/HomogeneousQuotient.lean"
+    invariant_metric_source = bfrf_root / "BFRF/HomogeneousInvariantMetric.lean"
+    geometric_ricci_source = bfrf_root / "BFRF/HomogeneousGeometricRicci.lean"
     bfrf_library = bfrf_root / ".lake/build/lib/lean"
     adapter_source = ROOT / "compat/BFRF/HomomorphismLieAlgebra.lean"
     check_source = ROOT / "scripts/CheckBFRFCompatibility.lean"
@@ -141,9 +144,17 @@ def main() -> int:
     lieii_check_source = ROOT / "scripts/CheckBFRFLieII.lean"
     lieiii_adapter_source = ROOT / "compat/BFRF/LieIII.lean"
     lieiii_check_source = ROOT / "scripts/CheckBFRFLieIII.lean"
+    action_adapter_source = ROOT / "compat/BFRF/QuotientAction.lean"
+    metric_adapter_source = ROOT / "compat/BFRF/InvariantMetric.lean"
+    fields_adapter_source = ROOT / "compat/BFRF/FundamentalFields.lean"
+    isotropy_metric_adapter_source = ROOT / "compat/BFRF/IsotropyMetric.lean"
+    fields_check_source = ROOT / "scripts/CheckBFRFFundamentalFields.lean"
+    metric_check_source = ROOT / "scripts/CheckBFRFInvariantMetric.lean"
     require_file(integration_source, "Pass the path to an existing BFRF checkout.")
     require_file(isotropy_source, "BFRF's isotropy subgroup source is missing.")
     require_file(quotient_source, "BFRF's homogeneous quotient source is missing.")
+    require_file(invariant_metric_source, "BFRF's invariant-metric source is missing.")
+    require_file(geometric_ricci_source, "BFRF's geometric Ricci source is missing.")
     for root in (ROOT, bfrf_root):
         require_file(root / "lean-toolchain", "Both checkouts need a Lean toolchain file.")
     if (ROOT / "lean-toolchain").read_text().strip() != (
@@ -180,16 +191,27 @@ def main() -> int:
         ROOT / ".lake/build/lib/lean/LieGroups/RepresentationIntegration.olean",
         "Run `lake build` in this LieGroups checkout first.",
     )
-    # These are the external DifferentialGeometry imports in BFRF's integration
-    # source closure. Its two maximal roots build all five without adding a
-    # downstream dependency or using BFRF's separately pinned LieGroups package.
+    for module in (
+        "HomogeneousMetricSmooth", "FundamentalVectorFieldBracket",
+        "FundamentalVectorFieldKilling", "ActionAdjoint", "AdjointDifferential",
+        "IsotropyRepresentation", "IsotropyRepresentationDifferential",
+    ):
+        require_file(
+            ROOT / f".lake/build/lib/lean/LieGroups/{module}.olean",
+            "Run `lake build` in this LieGroups checkout first.",
+        )
+    # Check the external DifferentialGeometry imports needed by the rebuilt BFRF
+    # interfaces without adding a downstream dependency or using BFRF's
+    # separately pinned LieGroups package.
     geometry_library = ROOT / ".lake/packages/DifferentialGeometry/.lake/build/lib/lean"
     required_geometry = (
         "DifferentialGeometry.Geometry.Connection.LeviCivita.Defs",
         "DifferentialGeometry.Geometry.Connection.Realization.Embedding",
         "DifferentialGeometry.Geometry.Curvature.CurvatureOperator.CurvatureBundling",
         "DifferentialGeometry.Geometry.Curvature.CurvatureOperator.Defs",
+        "DifferentialGeometry.Geometry.Curvature.CurvatureOperator.RicciIdentity",
         "DifferentialGeometry.Geometry.Metric.LieDerivative.Cartan",
+        "DifferentialGeometry.Geometry.Metric.Pullback",
     )
     missing_geometry = [
         name for name in required_geometry
@@ -201,7 +223,9 @@ def main() -> int:
             + "\n  ".join(missing_geometry)
             + "\nRun here: lake build "
             "DifferentialGeometry.Geometry.Curvature.CurvatureOperator.CurvatureBundling "
-            "DifferentialGeometry.Geometry.Metric.LieDerivative.Cartan"
+            "DifferentialGeometry.Geometry.Curvature.CurvatureOperator.RicciIdentity "
+            "DifferentialGeometry.Geometry.Metric.LieDerivative.Cartan "
+            "DifferentialGeometry.Geometry.Metric.Pullback"
         )
     require_file(adapter_source, "The optional BFRF adapter source is missing.")
     require_file(check_source, "The BFRF adapter examples and audit are missing.")
@@ -213,6 +237,15 @@ def main() -> int:
     require_file(lieii_check_source, "The BFRF Lie II examples and audit are missing.")
     require_file(lieiii_adapter_source, "The optional BFRF Lie III adapter is missing.")
     require_file(lieiii_check_source, "The BFRF Lie III examples and audit are missing.")
+    for source, description in (
+        (action_adapter_source, "quotient action adapter"),
+        (metric_adapter_source, "invariant metric adapter"),
+        (fields_adapter_source, "fundamental fields adapter"),
+        (isotropy_metric_adapter_source, "isotropy metric adapter"),
+        (fields_check_source, "fundamental fields examples and audit"),
+        (metric_check_source, "invariant metric examples and audit"),
+    ):
+        require_file(source, f"The BFRF {description} is missing.")
     env = lake_environment()
     lean = shutil.which("lean", path=env.get("PATH"))
     if lean is None:
@@ -229,7 +262,9 @@ def main() -> int:
             "HomogeneousLieGroupIntegration", "HomomorphismLieAlgebra",
             "HomogeneousIsotropySubgroup", "LieSubgroup",
             "HomogeneousQuotient", "ClosedSubgroupQuotient",
-            "LieII", "LieIII",
+            "HomogeneousInvariantMetric", "QuotientAction", "InvariantMetric",
+            "HomogeneousGeometricRicci",
+            "FundamentalFields", "IsotropyMetric", "LieII", "LieIII",
         }
         for artifact in (bfrf_library / "BFRF").iterdir():
             if artifact.name.split(".", 1)[0] not in rebuilt_modules:
@@ -267,8 +302,32 @@ def main() -> int:
                 output_root / "BFRF/HomogeneousQuotient.olean",
             ),
             (
+                "BFRF invariant-metric source", invariant_metric_source, bfrf_root,
+                output_root / "BFRF/HomogeneousInvariantMetric.olean",
+            ),
+            (
+                "BFRF geometric Ricci source", geometric_ricci_source, bfrf_root,
+                output_root / "BFRF/HomogeneousGeometricRicci.olean",
+            ),
+            (
+                "BFRF quotient action adapter", action_adapter_source, ROOT / "compat",
+                output_root / "BFRF/QuotientAction.olean",
+            ),
+            (
                 "BFRF quotient construction adapter", quotient_adapter_source, ROOT / "compat",
                 output_root / "BFRF/ClosedSubgroupQuotient.olean",
+            ),
+            (
+                "BFRF invariant metric construction adapter", metric_adapter_source, ROOT / "compat",
+                output_root / "BFRF/InvariantMetric.olean",
+            ),
+            (
+                "BFRF fundamental fields adapter", fields_adapter_source, ROOT / "compat",
+                output_root / "BFRF/FundamentalFields.olean",
+            ),
+            (
+                "BFRF isotropy metric adapter", isotropy_metric_adapter_source, ROOT / "compat",
+                output_root / "BFRF/IsotropyMetric.olean",
             ),
         ):
             print(f"Checking {label}: {source}", flush=True)
@@ -286,6 +345,10 @@ def main() -> int:
         subprocess.run([lean, str(lieii_check_source)], cwd=ROOT, env=env, check=True)
         print("Checking BFRF Lie III constructions and axiom audit", flush=True)
         subprocess.run([lean, str(lieiii_check_source)], cwd=ROOT, env=env, check=True)
+        print("Checking BFRF fundamental fields and axiom audit", flush=True)
+        subprocess.run([lean, str(fields_check_source)], cwd=ROOT, env=env, check=True)
+        print("Checking BFRF invariant metric construction and axiom audit", flush=True)
+        subprocess.run([lean, str(metric_check_source)], cwd=ROOT, env=env, check=True)
     print("BFRF compatibility check passed.")
     return 0
 

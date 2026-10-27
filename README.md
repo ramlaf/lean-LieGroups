@@ -73,9 +73,26 @@ the geometric construction integrates its image and takes its smooth universal c
 The Ado proof, including Whitehead, Weyl, and Levi, is adapted from
 [Miyahara Kō's formalization](LieGroups/Algebra/Ado/README.md), with its Apache 2.0
 license and attribution retained. The optional BFRF Lie III adapter constructs the
-actual downstream record from a bracket and its Jacobi proof. Invariant metrics
-and the final BF–RF assembly remain the next stages.
+actual downstream record from a bracket and its Jacobi proof. Stage 9 supplies
+invariant metrics and infinitesimal actions; the final BF–RF assembly is next.
 See [the ten-stage roadmap](docs/FOUNDATIONS.md).
+
+Stage 9 is complete. A positive symmetric stabilizer-invariant origin form now
+constructs an actual smooth invariant Riemannian metric on the homogeneous quotient;
+its value at the origin and uniqueness are proved. Smooth actions supply actual
+fundamental vector fields, complete one-parameter orbit curves, and the negative
+bracket identity. Metric-preserving actions give Killing fundamental fields.
+On connected groups, infinitesimal preservation of a bilinear
+form now implies preservation by the full representation. For BFRF's actual
+closed connected isotropy, the tangent representation differentiates to the
+bracket action, so infinitesimal metric isotropy supplies stabilizer invariance.
+`exists_metric_fundamentalFields` constructs the quotient, normalized invariant
+metric, and linear family of smooth Killing fields, with their full origin values
+and negative bracket identity. The quotient retains its constructed local smooth
+sections and Hausdorff topology. The supplied integrating group must be Hausdorff;
+closed isotropy and its specified tangent Lie algebra remain explicit inputs.
+The closing check applies BFRF's actual Ricci tensor and Ricci operator theorems
+to the constructed metric and fields, adding the existing reductivity hypothesis.
 
 The Lean library and namespace are `LieGroups`; the GitHub repository is `lean-LieGroups`.
 Requires the Lean version in `lean-toolchain` and the Mathlib revision in `lakefile.toml`.
@@ -100,13 +117,21 @@ lake env lean scripts/CheckAbelianizationIntegration.lean
 lake env lean scripts/CheckRepresentationSeparation.lean
 lake env lean scripts/CheckPBW.lean
 lake env lean scripts/CheckAdoLieIII.lean
+lake env lean scripts/CheckHomogeneousMetric.lean
+lake env lean scripts/CheckIsotropyInvariance.lean
+lake env lean scripts/CheckRiemannianMetric.lean
+lake env lean scripts/CheckFundamentalVectorFields.lean
 ```
 
 The optional [differentiation adapter](compat/BFRF/HomomorphismLieAlgebra.lean),
 [embedded subgroup adapter](compat/BFRF/LieSubgroup.lean),
 [closed-subgroup quotient adapter](compat/BFRF/ClosedSubgroupQuotient.lean),
-[Lie II adapter](compat/BFRF/LieII.lean), and
-[Lie III adapter](compat/BFRF/LieIII.lean) are checked
+[Lie II adapter](compat/BFRF/LieII.lean),
+[Lie III adapter](compat/BFRF/LieIII.lean),
+[quotient action](compat/BFRF/QuotientAction.lean),
+[metric construction](compat/BFRF/InvariantMetric.lean),
+[fundamental fields](compat/BFRF/FundamentalFields.lean), and
+[isotropy metric bridge](compat/BFRF/IsotropyMetric.lean) are checked
 against the actual downstream structures. The quotient adapter constructs
 `BFRF.Homogeneous.HomogeneousQuotientRealization` from supplied integrating-group
 and closed-isotropy records, with an explicit Hausdorff assumption on the ambient group.
@@ -115,18 +140,24 @@ BFRF checkout with the same toolchain and dependency versions, with an up-to-dat
 build through `BFRF.HomogeneousLieAlgebra`. From this repository, run:
 
 ```sh
-lake build DifferentialGeometry.Geometry.Curvature.CurvatureOperator.CurvatureBundling DifferentialGeometry.Geometry.Metric.LieDerivative.Cartan
+lake build \
+  DifferentialGeometry.Geometry.Curvature.CurvatureOperator.CurvatureBundling \
+  DifferentialGeometry.Geometry.Curvature.CurvatureOperator.RicciIdentity \
+  DifferentialGeometry.Geometry.Metric.LieDerivative.Cartan \
+  DifferentialGeometry.Geometry.Metric.Pullback
 python3 scripts/check_bfrf_compatibility.py ../BFRF
 ```
 
-The runner recompiles BFRF's actual integration, isotropy, and homogeneous quotient
-sources and the five adapters in a temporary directory, then checks examples and
-axiom dependencies. It does not change the BFRF checkout or either project's dependency
+The runner recompiles BFRF's actual integration, isotropy, homogeneous quotient,
+invariant-metric, and geometric Ricci sources and the nine adapters in a temporary
+directory, then checks examples and axiom dependencies. The metric check directly
+uses the geometric Ricci theorems with the constructed realization.
+It does not change the BFRF checkout or either project's dependency
 pins. The adapters remain outside the core library to avoid a dependency cycle.
 
 AI-generation disclosure: the initial modules and roadmap were generated with OpenAI
 Codex in BFRF; this package setup and README section were generated by OpenAI Codex on
-2026-09-26, and updated on 2026-10-19. Human mathematical review remains necessary. The original module disclosures
+2026-09-26, and updated on 2026-10-27. Human mathematical review remains necessary. The original module disclosures
 are preserved. Miyahara Kō's Ado sources retain their original authorship notices;
 the port and its changes are documented separately. Project material is distributed
 under the included Apache 2.0 license.

@@ -93,3 +93,12 @@ import LieGroups.Algebra.WhiteheadCasimir
 import LieGroups.Algebra.WhiteheadExtension
 import LieGroups.Algebra.Ado
 import LieGroups.LieIII
+import LieGroups.FundamentalVectorFieldBracket
+import LieGroups.FundamentalVectorFieldKilling
+import LieGroups.IsotropyInnerProduct
+import LieGroups.HomogeneousMetricUniqueness
+import LieGroups.HomogeneousQuotientMetric
+import LieGroups.ActionAdjoint
+import LieGroups.AdjointDifferential
+import LieGroups.IsotropyRepresentation
+import LieGroups.IsotropyRepresentationDifferential

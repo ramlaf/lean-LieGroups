@@ -35,6 +35,17 @@ local instance bfrfQuotientCompleteModel : CompleteSpace (K × P) :=
   FiniteDimensional.complete ℝ (K × P)
 local instance bfrfQuotientLEInfty : ENat.LEInfty (minSmoothness ℝ 3) := ⟨by simp⟩
 
+/-- The quotient realization together with the local smooth sections and
+Hausdorff topology supplied by the closed-subgroup construction. -/
+structure RegularHomogeneousQuotientRealization
+    (A : IntegratedLieGroup.{u} μ hμ) (KA : IntegratedIsotropySubgroup A hKK)
+    extends HomogeneousQuotientRealization A KA where
+  localSections : LieGroups.Manifold.HasContMDiffLocalSections
+    𝓘(ℝ, K × P) 𝓘(ℝ, P) ∞ π
+  [hausdorff : T2Space M]
+
+attribute [instance] RegularHomogeneousQuotientRealization.hausdorff
+
 private theorem exists_isotropy_complement
     {F : Type*} [NormedAddCommGroup F] [NormedSpace ℝ F] [FiniteDimensional ℝ F]
     [CompleteSpace F]
@@ -80,9 +91,9 @@ private theorem exists_isotropy_complement
 
 /-- A closed isotropy subgroup in a Hausdorff finite-dimensional integrating group
 constructs BFRF's full homogeneous quotient realization. -/
-theorem nonempty_homogeneousQuotientRealization [T2Space A.G]
+theorem nonempty_regularHomogeneousQuotientRealization [T2Space A.G]
     (KA : IntegratedIsotropySubgroup A hKK) :
-    Nonempty (HomogeneousQuotientRealization A KA) := by
+    Nonempty (RegularHomogeneousQuotientRealization A KA) := by
   obtain ⟨C⟩ := LieGroups.nonempty_closedLieSubgroup
     (I := 𝓘(ℝ, K × P)) KA.Kμ KA.closed
   let : CompleteSpace (LieGroups.subgroupTangentModel (I := 𝓘(ℝ, K × P)) KA.Kμ) :=
@@ -102,6 +113,9 @@ theorem nonempty_homogeneousQuotientRealization [T2Space A.G]
       ((LieGroups.lieAlgebraModelEquiv (I := 𝓘(ℝ, K × P)) (G := A.G)).symm (R 0)) = 1
     simp
   let Q := B.quotientAtlas hB1
+  let : IsClosed (S.toImmersedLieSubgroup.subgroup : Set A.G) := by
+    rw [hSsub]
+    exact KA.closed
   refine ⟨{
     M := Q.Space
     π := Q.projection
@@ -116,6 +130,8 @@ theorem nonempty_homogeneousQuotientRealization [T2Space A.G]
     tangentEquiv := B.sectionTangentEquiv hB1 hB0 hBsec0
     dπ_tangent := ?_
     smooth_descend := fun f hf => Q.hasContMDiffLocalSections.contMDiff_of_comp hf
+    localSections := Q.hasContMDiffLocalSections
+    hausdorff := inferInstanceAs (T2Space (B.QuotientSpace hB1))
   }⟩
   · intro g₁ g₂
     change (QuotientGroup.mk g₁ : A.G ⧸ S.toImmersedLieSubgroup.subgroup) =
@@ -130,5 +146,13 @@ theorem nonempty_homogeneousQuotientRealization [T2Space A.G]
       ((LieGroups.lieAlgebraModelEquiv (I := 𝓘(ℝ, K × P)) (G := A.G)).symm
         (R (p, 0))) = _ at h
     rwa [hRP] at h
+
+/-- A closed isotropy subgroup in a Hausdorff finite-dimensional integrating group
+constructs BFRF's original homogeneous quotient interface. -/
+theorem nonempty_homogeneousQuotientRealization [T2Space A.G]
+    (KA : IntegratedIsotropySubgroup A hKK) :
+    Nonempty (HomogeneousQuotientRealization A KA) := by
+  obtain ⟨Q⟩ := nonempty_regularHomogeneousQuotientRealization KA
+  exact ⟨Q.toHomogeneousQuotientRealization⟩
 
 end BFRF.Homogeneous
