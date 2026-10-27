@@ -73,9 +73,10 @@ the geometric construction integrates its image and takes its smooth universal c
 The Ado proof, including Whitehead, Weyl, and Levi, is adapted from
 [Miyahara Kō's formalization](LieGroups/Algebra/Ado/README.md), with its Apache 2.0
 license and attribution retained. The optional BFRF Lie III adapter constructs the
-actual downstream record from a bracket and its Jacobi proof. Stage 9 supplies
-invariant metrics and infinitesimal actions; the final BF–RF assembly is next.
-See [the ten-stage roadmap](docs/FOUNDATIONS.md).
+actual downstream record from a bracket and its Jacobi proof. All ten foundation
+stages are complete, including invariant metrics, infinitesimal actions, and the
+constructed global BF–RF correspondence.
+See [the ten-stage roadmap](docs/FOUNDATIONS.md) and [the reviewed scope](docs/BFRF_SCOPE.md).
 
 Stage 9 is complete. A positive symmetric stabilizer-invariant origin form now
 constructs an actual smooth invariant Riemannian metric on the homogeneous quotient;
@@ -93,6 +94,20 @@ sections and Hausdorff topology. The supplied integrating group must be Hausdorf
 closed isotropy and its specified tangent Lie algebra remain explicit inputs.
 The closing check applies BFRF's actual Ricci tensor and Ricci operator theorems
 to the constructed metric and fields, adding the existing reductivity hypothesis.
+
+Stage 10 starts from a bracket and closedness of its canonical connected isotropy
+subgroup. It constructs the initial integration, closed isotropy, quotient, metric,
+and Killing fields. For an actual normalized invariant Ricci flow on this quotient,
+`lauret_global_bf_rf_of_admissible_bracket` constructs the moving frame and global
+target realizations, with both frame ODEs, the bracket ODE, equivariance, and metric
+pullback. The coherent choice uses a common quotient manifold and proves jointly
+smooth comparison maps; its target metrics equal the supplied flow metrics.
+Connected closed isotropy is proved unique. The new `ConstructedGlobalBFRealization`
+uses actual isotropy compatibility in place of the legacy record's stronger
+unrestricted connected-subgroup uniqueness field.
+Examples cover zero and positive-dimensional isotropy; the latter is explicitly
+ineffective. Ricci-flow PDE existence, maximal-time equivalence, and convergence
+remain outside the proved scope.
 
 The Lean library and namespace are `LieGroups`; the GitHub repository is `lean-LieGroups`.
 Requires the Lean version in `lean-toolchain` and the Mathlib revision in `lakefile.toml`.
@@ -130,8 +145,11 @@ The optional [differentiation adapter](compat/BFRF/HomomorphismLieAlgebra.lean),
 [Lie III adapter](compat/BFRF/LieIII.lean),
 [quotient action](compat/BFRF/QuotientAction.lean),
 [metric construction](compat/BFRF/InvariantMetric.lean),
-[fundamental fields](compat/BFRF/FundamentalFields.lean), and
-[isotropy metric bridge](compat/BFRF/IsotropyMetric.lean) are checked
+[fundamental fields](compat/BFRF/FundamentalFields.lean),
+[isotropy metric bridge](compat/BFRF/IsotropyMetric.lean),
+[admissibility](compat/BFRF/Admissible.lean),
+[global realizations](compat/BFRF/GlobalRealization.lean), and
+[global correspondence](compat/BFRF/GlobalCorrespondence.lean) are checked
 against the actual downstream structures. The quotient adapter constructs
 `BFRF.Homogeneous.HomogeneousQuotientRealization` from supplied integrating-group
 and closed-isotropy records, with an explicit Hausdorff assumption on the ambient group.
@@ -144,14 +162,18 @@ lake build \
   DifferentialGeometry.Geometry.Curvature.CurvatureOperator.CurvatureBundling \
   DifferentialGeometry.Geometry.Curvature.CurvatureOperator.RicciIdentity \
   DifferentialGeometry.Geometry.Metric.LieDerivative.Cartan \
-  DifferentialGeometry.Geometry.Metric.Pullback
+  DifferentialGeometry.Geometry.Metric.Pullback \
+  DifferentialGeometry.Analysis.ODE.Flow.GlobalExistence \
+  DifferentialGeometry.Geometry.Flow.RicciFlow.Solution.Basic \
+  DifferentialGeometry.Geometry.Curvature.MetricLeviCivitaReconcile
 python3 scripts/check_bfrf_compatibility.py ../BFRF
 ```
 
 The runner recompiles BFRF's actual integration, isotropy, homogeneous quotient,
-invariant-metric, and geometric Ricci sources and the nine adapters in a temporary
-directory, then checks examples and axiom dependencies. The metric check directly
-uses the geometric Ricci theorems with the constructed realization.
+invariant-metric, geometric Ricci, and global correspondence sources and the twelve
+adapters in a temporary directory, then runs ten checks of examples and axiom
+dependencies. The checks directly use the geometric Ricci and actual Ricci-flow
+theorems with the constructed realizations.
 It does not change the BFRF checkout or either project's dependency
 pins. The adapters remain outside the core library to avoid a dependency cycle.
 

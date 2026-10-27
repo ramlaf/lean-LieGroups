@@ -102,3 +102,4 @@ import LieGroups.ActionAdjoint
 import LieGroups.AdjointDifferential
 import LieGroups.IsotropyRepresentation
 import LieGroups.IsotropyRepresentationDifferential
+import LieGroups.ClosedLieSubalgebraIntegration

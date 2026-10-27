@@ -11,8 +11,8 @@ Their sources and locked dependencies must be current; shared dependency pins
 must match this checkout's pins.
 This check does not build BFRF, change either project's dependency pins, or write
 to the BFRF checkout. It recompiles BFRF's actual integration, isotropy, quotient,
-invariant-metric, and geometric Ricci sources and the adapters into a temporary
-directory, then runs the examples and axiom audits.
+invariant-metric, geometric Ricci, and global BF–RF correspondence sources and
+the adapters into a temporary directory, then runs the examples and axiom audits.
 """
 
 import argparse
@@ -133,6 +133,11 @@ def main() -> int:
     quotient_source = bfrf_root / "BFRF/HomogeneousQuotient.lean"
     invariant_metric_source = bfrf_root / "BFRF/HomogeneousInvariantMetric.lean"
     geometric_ricci_source = bfrf_root / "BFRF/HomogeneousGeometricRicci.lean"
+    converse_source = bfrf_root / "BFRF/HomogeneousMetricFlowConverse.lean"
+    equivalence_source = bfrf_root / "BFRF/HomogeneousBFRFEquivalence.lean"
+    global_source = bfrf_root / "BFRF/HomogeneousGlobalBFRF.lean"
+    ricci_adapter_source = bfrf_root / "BFRF/HomogeneousRicciFlowAdapter.lean"
+    lauret_source = bfrf_root / "BFRF/LauretBFRF.lean"
     bfrf_library = bfrf_root / ".lake/build/lib/lean"
     adapter_source = ROOT / "compat/BFRF/HomomorphismLieAlgebra.lean"
     check_source = ROOT / "scripts/CheckBFRFCompatibility.lean"
@@ -150,11 +155,25 @@ def main() -> int:
     isotropy_metric_adapter_source = ROOT / "compat/BFRF/IsotropyMetric.lean"
     fields_check_source = ROOT / "scripts/CheckBFRFFundamentalFields.lean"
     metric_check_source = ROOT / "scripts/CheckBFRFInvariantMetric.lean"
+    admissible_adapter_source = ROOT / "compat/BFRF/Admissible.lean"
+    global_adapter_source = ROOT / "compat/BFRF/GlobalRealization.lean"
+    correspondence_adapter_source = ROOT / "compat/BFRF/GlobalCorrespondence.lean"
+    admissible_check_source = ROOT / "scripts/CheckBFRFAdmissible.lean"
+    global_check_source = ROOT / "scripts/CheckBFRFGlobal.lean"
+    global_examples_source = ROOT / "scripts/CheckBFRFGlobalExamples.lean"
     require_file(integration_source, "Pass the path to an existing BFRF checkout.")
     require_file(isotropy_source, "BFRF's isotropy subgroup source is missing.")
     require_file(quotient_source, "BFRF's homogeneous quotient source is missing.")
     require_file(invariant_metric_source, "BFRF's invariant-metric source is missing.")
     require_file(geometric_ricci_source, "BFRF's geometric Ricci source is missing.")
+    for source, description in (
+        (converse_source, "metric-flow converse"),
+        (equivalence_source, "fixed-realization BF–RF equivalence"),
+        (global_source, "global BF–RF correspondence"),
+        (ricci_adapter_source, "genuine Ricci-flow adapter"),
+        (lauret_source, "Lauret BF–RF theorem"),
+    ):
+        require_file(source, f"BFRF's {description} source is missing.")
     for root in (ROOT, bfrf_root):
         require_file(root / "lean-toolchain", "Both checkouts need a Lean toolchain file.")
     if (ROOT / "lean-toolchain").read_text().strip() != (
@@ -195,6 +214,7 @@ def main() -> int:
         "HomogeneousMetricSmooth", "FundamentalVectorFieldBracket",
         "FundamentalVectorFieldKilling", "ActionAdjoint", "AdjointDifferential",
         "IsotropyRepresentation", "IsotropyRepresentationDifferential",
+        "ClosedLieSubalgebraIntegration",
     ):
         require_file(
             ROOT / f".lake/build/lib/lean/LieGroups/{module}.olean",
@@ -212,6 +232,9 @@ def main() -> int:
         "DifferentialGeometry.Geometry.Curvature.CurvatureOperator.RicciIdentity",
         "DifferentialGeometry.Geometry.Metric.LieDerivative.Cartan",
         "DifferentialGeometry.Geometry.Metric.Pullback",
+        "DifferentialGeometry.Analysis.ODE.Flow.GlobalExistence",
+        "DifferentialGeometry.Geometry.Flow.RicciFlow.Solution.Basic",
+        "DifferentialGeometry.Geometry.Curvature.MetricLeviCivitaReconcile",
     )
     missing_geometry = [
         name for name in required_geometry
@@ -225,7 +248,10 @@ def main() -> int:
             "DifferentialGeometry.Geometry.Curvature.CurvatureOperator.CurvatureBundling "
             "DifferentialGeometry.Geometry.Curvature.CurvatureOperator.RicciIdentity "
             "DifferentialGeometry.Geometry.Metric.LieDerivative.Cartan "
-            "DifferentialGeometry.Geometry.Metric.Pullback"
+            "DifferentialGeometry.Geometry.Metric.Pullback "
+            "DifferentialGeometry.Analysis.ODE.Flow.GlobalExistence "
+            "DifferentialGeometry.Geometry.Flow.RicciFlow.Solution.Basic "
+            "DifferentialGeometry.Geometry.Curvature.MetricLeviCivitaReconcile"
         )
     require_file(adapter_source, "The optional BFRF adapter source is missing.")
     require_file(check_source, "The BFRF adapter examples and audit are missing.")
@@ -244,6 +270,12 @@ def main() -> int:
         (isotropy_metric_adapter_source, "isotropy metric adapter"),
         (fields_check_source, "fundamental fields examples and audit"),
         (metric_check_source, "invariant metric examples and audit"),
+        (admissible_adapter_source, "closed-isotropy admissibility adapter"),
+        (global_adapter_source, "global realization construction adapter"),
+        (correspondence_adapter_source, "constructed global correspondence adapter"),
+        (admissible_check_source, "closed-isotropy admissibility examples and audit"),
+        (global_check_source, "global correspondence examples and audit"),
+        (global_examples_source, "concrete global realization examples and audit"),
     ):
         require_file(source, f"The BFRF {description} is missing.")
     env = lake_environment()
@@ -265,6 +297,9 @@ def main() -> int:
             "HomogeneousInvariantMetric", "QuotientAction", "InvariantMetric",
             "HomogeneousGeometricRicci",
             "FundamentalFields", "IsotropyMetric", "LieII", "LieIII",
+            "HomogeneousMetricFlowConverse", "HomogeneousBFRFEquivalence",
+            "HomogeneousGlobalBFRF", "HomogeneousRicciFlowAdapter", "LauretBFRF",
+            "Admissible", "GlobalRealization", "GlobalCorrespondence",
         }
         for artifact in (bfrf_library / "BFRF").iterdir():
             if artifact.name.split(".", 1)[0] not in rebuilt_modules:
@@ -310,6 +345,26 @@ def main() -> int:
                 output_root / "BFRF/HomogeneousGeometricRicci.olean",
             ),
             (
+                "BFRF metric-flow converse source", converse_source, bfrf_root,
+                output_root / "BFRF/HomogeneousMetricFlowConverse.olean",
+            ),
+            (
+                "BFRF fixed-realization equivalence source", equivalence_source, bfrf_root,
+                output_root / "BFRF/HomogeneousBFRFEquivalence.olean",
+            ),
+            (
+                "BFRF global correspondence source", global_source, bfrf_root,
+                output_root / "BFRF/HomogeneousGlobalBFRF.olean",
+            ),
+            (
+                "BFRF genuine Ricci-flow adapter source", ricci_adapter_source, bfrf_root,
+                output_root / "BFRF/HomogeneousRicciFlowAdapter.olean",
+            ),
+            (
+                "BFRF Lauret correspondence source", lauret_source, bfrf_root,
+                output_root / "BFRF/LauretBFRF.olean",
+            ),
+            (
                 "BFRF quotient action adapter", action_adapter_source, ROOT / "compat",
                 output_root / "BFRF/QuotientAction.olean",
             ),
@@ -328,6 +383,18 @@ def main() -> int:
             (
                 "BFRF isotropy metric adapter", isotropy_metric_adapter_source, ROOT / "compat",
                 output_root / "BFRF/IsotropyMetric.olean",
+            ),
+            (
+                "BFRF closed-isotropy admissibility adapter", admissible_adapter_source,
+                ROOT / "compat", output_root / "BFRF/Admissible.olean",
+            ),
+            (
+                "BFRF global realization construction adapter", global_adapter_source,
+                ROOT / "compat", output_root / "BFRF/GlobalRealization.olean",
+            ),
+            (
+                "BFRF constructed global correspondence adapter", correspondence_adapter_source,
+                ROOT / "compat", output_root / "BFRF/GlobalCorrespondence.olean",
             ),
         ):
             print(f"Checking {label}: {source}", flush=True)
@@ -349,6 +416,12 @@ def main() -> int:
         subprocess.run([lean, str(fields_check_source)], cwd=ROOT, env=env, check=True)
         print("Checking BFRF invariant metric construction and axiom audit", flush=True)
         subprocess.run([lean, str(metric_check_source)], cwd=ROOT, env=env, check=True)
+        print("Checking BFRF closed-isotropy admissibility and axiom audit", flush=True)
+        subprocess.run([lean, str(admissible_check_source)], cwd=ROOT, env=env, check=True)
+        print("Checking BFRF constructed global correspondence and axiom audit", flush=True)
+        subprocess.run([lean, str(global_check_source)], cwd=ROOT, env=env, check=True)
+        print("Checking BFRF concrete global realizations and axiom audit", flush=True)
+        subprocess.run([lean, str(global_examples_source)], cwd=ROOT, env=env, check=True)
     print("BFRF compatibility check passed.")
     return 0
 

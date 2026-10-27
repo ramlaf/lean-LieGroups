@@ -614,3 +614,6 @@ This reports dependencies; it neither enforces an allowlist nor proves hypothese
 #print axioms LieGroups.fixedPointTangentRepresentationOfHom_orbitLieDifferential
 #print axioms LieGroups.representationDifferential_fixedPointTangentRepresentationOfHom
 #print axioms LieGroups.bilinear_fixedPointTangentRepresentationOfHom_of_bracket
+#print axioms LieGroups.sigmaCompactSpace_of_connected_lieGroup
+#print axioms LieGroups.ImmersedLieSubgroup.isEmbedding_of_isClosed
+#print axioms LieGroups.subgroupTangentSet_lieSubalgebraSubgroup_of_isClosed

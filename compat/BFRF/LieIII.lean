@@ -34,8 +34,8 @@ universe uE uV uG
 variable {E : Type uE} [NormedAddCommGroup E] [NormedSpace ℝ E]
   [FiniteDimensional ℝ E] {μ : Bracket E} {hμ : μ.Jacobi}
 
-local instance : ENat.LEInfty (minSmoothness ℝ 3) := ⟨by simp⟩
-local instance : CompleteSpace E := FiniteDimensional.complete ℝ E
+local instance bfrfLieIIILEInfty : ENat.LEInfty (minSmoothness ℝ 3) := ⟨by simp⟩
+local instance bfrfLieIIICompleteModel : CompleteSpace E := FiniteDimensional.complete ℝ E
 
 local instance bracketLieNormedAddCommGroup : NormedAddCommGroup (BracketLie μ hμ) :=
   LieGroups.lieAlgebraNormedAddCommGroup (BracketLie μ hμ)
@@ -43,7 +43,8 @@ local instance bracketLieNormedAddCommGroup : NormedAddCommGroup (BracketLie μ 
 local instance bracketLieNormedSpace : NormedSpace ℝ (BracketLie μ hμ) :=
   LieGroups.lieAlgebraNormedSpace (BracketLie μ hμ)
 
-local instance : CompleteSpace (BracketLie μ hμ) := FiniteDimensional.complete ℝ _
+local instance bfrfLieIIICompleteBracket : CompleteSpace (BracketLie μ hμ) :=
+  FiniteDimensional.complete ℝ _
 
 namespace IntegratedLieGroup
 

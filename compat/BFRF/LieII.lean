@@ -26,8 +26,8 @@ universe u
 variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
   [FiniteDimensional ℝ E]
 
-local instance : CompleteSpace E := FiniteDimensional.complete ℝ E
-local instance : ENat.LEInfty (minSmoothness ℝ 3) := ⟨by simp⟩
+local instance bfrfLieIICompleteModel : CompleteSpace E := FiniteDimensional.complete ℝ E
+local instance bfrfLieIILEInfty : ENat.LEInfty (minSmoothness ℝ 3) := ⟨by simp⟩
 
 variable {μ ν : Bracket E} {hμ : μ.Jacobi} {hν : ν.Jacobi}
   {A : IntegratedLieGroup.{u} μ hμ} {B : IntegratedLieGroup.{u} ν hν}
